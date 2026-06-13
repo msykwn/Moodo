@@ -20,6 +20,7 @@ app.add_middleware(
 )
 
 TASKS_FILE = Path(__file__).parent / "tasks.json"
+MOOD_FILE = Path(__file__).parent / "mood.json"
 
 
 class TaskCreate(BaseModel):
@@ -33,6 +34,11 @@ class TaskCreate(BaseModel):
 class Task(TaskCreate):
     id: str
     score: int | None = None
+
+
+class Mood(BaseModel):
+    mood: str
+    available_hours: float
 
 
 def _read_json(path: Path, default):
@@ -102,3 +108,15 @@ def delete_task(task_id: str):
     if len(new_tasks) == len(tasks):
         raise HTTPException(status_code=404, detail="Task not found")
     _write_json(TASKS_FILE, new_tasks)
+
+
+@app.get("/mood")
+def get_mood():
+    data = _read_json(MOOD_FILE, {})
+    return data if data else {"mood": None, "available_hours": None}
+
+
+@app.put("/mood", response_model=Mood)
+def update_mood(mood: Mood):
+    _write_json(MOOD_FILE, mood.model_dump())
+    return mood
