@@ -110,6 +110,61 @@ body {
   background: #f3f4f6;
 }
 
+.mood-panel {
+  background: #f0f4ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.mood-panel-fields {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.mood-panel-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.mood-panel-select,
+.mood-panel-input {
+  border: 1px solid #c7d2fe;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.9rem;
+  background: #fff;
+  color: #111827;
+}
+
+.mood-panel-input {
+  width: 72px;
+}
+
+.mood-panel-feedback {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.mood-panel-feedback--saved {
+  color: #16a34a;
+}
+
+.mood-panel-feedback--error {
+  color: #ef4444;
+}
+
 .modal-backdrop {
   position: fixed;
   inset: 0;
