@@ -33,6 +33,7 @@ function App() {
         <TaskList refresh={refresh} onEdit={handleEdit} />
       </main>
       <TaskModal
+        key={editingTask === null ? 'closed' : ('__new' in editingTask ? 'new' : editingTask.id)}
         editingTask={editingTask}
         onClose={() => setEditingTask(null)}
         onSaved={handleTaskSaved}

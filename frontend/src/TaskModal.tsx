@@ -66,7 +66,7 @@ export function TaskModal({ editingTask, onClose, onSaved }: Props) {
   }
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
+    <div className="modal-backdrop" onClick={submitting ? undefined : onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <h2 className="modal-title">{isNew ? "タスクを追加" : "タスクを編集"}</h2>
         <form className="modal-form" onSubmit={handleSubmit}>
@@ -87,7 +87,10 @@ export function TaskModal({ editingTask, onClose, onSaved }: Props) {
               step={0.5}
               value={form.estimate_hours}
               required
-              onChange={(e) => setForm({ ...form, estimate_hours: Number(e.target.value) })}
+              onChange={(e) => {
+                const v = parseFloat(e.target.value)
+                if (!isNaN(v) && v > 0) setForm({ ...form, estimate_hours: v })
+              }}
             />
           </label>
           <label>
