@@ -13,21 +13,37 @@ export function MoodPanel() {
   const [initialized, setInitialized] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const latestMoodRef = useRef<string>(MOOD_OPTIONS[1])
+  const latestHoursRef = useRef<number>(1)
 
   useEffect(() => {
     fetchMood()
       .then((data) => {
-        if (data.mood !== null) setMood(data.mood)
-        if (data.available_hours !== null) setAvailableHours(data.available_hours)
+        if (data.mood !== null) {
+          setMood(data.mood)
+          latestMoodRef.current = data.mood
+        }
+        if (data.available_hours !== null) {
+          setAvailableHours(data.available_hours)
+          latestHoursRef.current = data.available_hours
+        }
       })
-      .catch(() => {})
+      .catch(() => {
+        setFeedback("error")
+        setErrorMessage("設定の読み込みに失敗しました")
+      })
       .finally(() => setInitialized(true))
+
+    return () => {
+      if (debounceRef.current !== null) clearTimeout(debounceRef.current)
+      if (feedbackTimerRef.current !== null) clearTimeout(feedbackTimerRef.current)
+    }
   }, [])
 
-  const triggerSave = (newMood: string, newHours: number) => {
+  const triggerSave = () => {
     if (debounceRef.current !== null) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
-      saveMood({ mood: newMood, available_hours: newHours })
+      saveMood({ mood: latestMoodRef.current, available_hours: latestHoursRef.current })
         .then(() => {
           setFeedback("saved")
           setErrorMessage("")
@@ -44,14 +60,16 @@ export function MoodPanel() {
   const handleMoodChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value
     setMood(value)
-    if (initialized) triggerSave(value, availableHours)
+    latestMoodRef.current = value
+    if (initialized) triggerSave()
   }
 
   const handleHoursChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseFloat(e.target.value)
     if (isNaN(value)) return
     setAvailableHours(value)
-    if (initialized) triggerSave(mood, value)
+    latestHoursRef.current = value
+    if (initialized) triggerSave()
   }
 
   return (
