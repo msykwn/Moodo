@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { MoodPanel } from "./MoodPanel"
 import { TaskList } from "./TaskList"
 import type { EditingTask, Task } from "./types"
 import "./app.css"
@@ -26,6 +27,7 @@ function App() {
           + タスクを追加
         </button>
       </header>
+      <MoodPanel />
       <main>
         <TaskList refresh={refresh} onEdit={handleEdit} />
       </main>
