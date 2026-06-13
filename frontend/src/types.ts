@@ -10,3 +10,5 @@ export interface Task {
   importance: Importance
   score: number | null
 }
+
+export type EditingTask = Task | { readonly __new: true }

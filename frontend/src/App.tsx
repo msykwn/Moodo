@@ -1,11 +1,13 @@
 import { useState } from "react"
 import { TaskList } from "./TaskList"
-import type { Task } from "./types"
+import type { EditingTask, Task } from "./types"
 import "./app.css"
+
+export const NEW_TASK: EditingTask = { __new: true }
 
 function App() {
   const [refresh, setRefresh] = useState(0)
-  const [editingTask, setEditingTask] = useState<Task | null>(null)
+  const [editingTask, setEditingTask] = useState<EditingTask | null>(null)
 
   const handleEdit = (task: Task) => {
     setEditingTask(task)
@@ -20,7 +22,7 @@ function App() {
     <div className="app">
       <header className="app-header">
         <h1>Moodo</h1>
-        <button className="btn-add" onClick={() => setEditingTask({} as Task)}>
+        <button className="btn-add" onClick={() => setEditingTask(NEW_TASK)}>
           + タスクを追加
         </button>
       </header>
@@ -31,7 +33,8 @@ function App() {
         <div className="modal-backdrop" onClick={() => setEditingTask(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <p>モーダル（#6で実装予定）</p>
-            <button onClick={handleTaskSaved}>閉じる</button>
+            <button onClick={() => setEditingTask(null)}>閉じる</button>
+            <button onClick={handleTaskSaved}>保存（仮）</button>
           </div>
         </div>
       )}

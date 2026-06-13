@@ -2,8 +2,8 @@ import type { Task } from "./types"
 
 const BASE_URL = "http://localhost:8000"
 
-export async function fetchTasks(): Promise<Task[]> {
-  const res = await fetch(`${BASE_URL}/tasks`)
+export async function fetchTasks(signal?: AbortSignal): Promise<Task[]> {
+  const res = await fetch(`${BASE_URL}/tasks`, { signal })
   if (!res.ok) throw new Error(`Failed to fetch tasks: ${res.status}`)
   return res.json()
 }
