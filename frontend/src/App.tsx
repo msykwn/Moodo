@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { MoodPanel } from "./MoodPanel"
 import { TaskList } from "./TaskList"
+import { TaskModal } from "./TaskModal"
 import type { EditingTask, Task } from "./types"
 import "./app.css"
 
@@ -31,15 +32,11 @@ function App() {
       <main>
         <TaskList refresh={refresh} onEdit={handleEdit} />
       </main>
-      {editingTask !== null && (
-        <div className="modal-backdrop" onClick={() => setEditingTask(null)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <p>モーダル（#6で実装予定）</p>
-            <button onClick={() => setEditingTask(null)}>閉じる</button>
-            <button onClick={handleTaskSaved}>保存（仮）</button>
-          </div>
-        </div>
-      )}
+      <TaskModal
+        editingTask={editingTask}
+        onClose={() => setEditingTask(null)}
+        onSaved={handleTaskSaved}
+      />
     </div>
   )
 }
