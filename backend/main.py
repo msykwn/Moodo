@@ -1,10 +1,7 @@
 import json
 import os
 import tempfile
-<<<<<<< HEAD
 import uuid
-=======
->>>>>>> f3ba1e7 (fix: レビュー指摘対応（アトミック書き込み・初回404解消・JSONDecodeError処理）)
 from pathlib import Path
 from typing import Literal
 
@@ -22,7 +19,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-<<<<<<< HEAD
 TASKS_FILE = Path(__file__).parent / "tasks.json"
 MOOD_FILE = Path(__file__).parent / "mood.json"
 
@@ -40,11 +36,6 @@ class Task(TaskCreate):
     score: int | None = None
 
 
-=======
-MOOD_FILE = Path(__file__).parent / "mood.json"
-
-
->>>>>>> f3ba1e7 (fix: レビュー指摘対応（アトミック書き込み・初回404解消・JSONDecodeError処理）)
 class Mood(BaseModel):
     mood: str
     available_hours: float
@@ -73,7 +64,6 @@ def health_check():
     return {"status": "ok"}
 
 
-<<<<<<< HEAD
 @app.get("/tasks", response_model=list[Task])
 def get_tasks():
     return _read_json(TASKS_FILE, [])
@@ -120,8 +110,6 @@ def delete_task(task_id: str):
     _write_json(TASKS_FILE, new_tasks)
 
 
-=======
->>>>>>> f3ba1e7 (fix: レビュー指摘対応（アトミック書き込み・初回404解消・JSONDecodeError処理）)
 @app.get("/mood")
 def get_mood():
     data = _read_json(MOOD_FILE, {})
