@@ -14,6 +14,22 @@
 
 ## AI評価の使い方
 
-1. `backend/tasks.json` と `backend/mood.json` を Claude Code（またはClaude.ai）に渡す
-2. 「各タスクのおすすめスコア（0〜100）をJSONで返してください」と依頼する
-3. 返ってきたJSONをアプリ下部の「AIスコアのインポート」欄に貼り付けてインポートする
+アプリで気分・空き時間を設定したあと、Claude Code に一言お願いするだけでスコアが更新される。
+
+```
+タスク評価して
+```
+
+```
+タスク整理して
+```
+
+```
+何やろうか
+```
+
+```
+今日何する？
+```
+
+Claude Code がプロジェクトルートの `score-prompt.md` の手順に従い、`backend/tasks.json` と `backend/mood.json` を読んでスコアを算出し、`tasks.json` を直接更新する。ブラウザをリロードすると反映される。
