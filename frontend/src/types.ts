@@ -1,6 +1,6 @@
-export type BotherLevel = "楽勝" | "普通" | "めんどう" | "やりたくない"
+export type BotherLevel = "チョロ" | "まあまあ" | "重い"
 export type Importance = "低" | "中" | "高"
-export type EstimateSize = "チョロ" | "小" | "中" | "大" | "極大"
+export type EstimateSize = "大" | "中" | "小"
 
 export interface Task {
   id: string

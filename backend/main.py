@@ -25,8 +25,8 @@ MOOD_FILE = Path(__file__).parent / "mood.json"
 
 class TaskCreate(BaseModel):
     title: str
-    estimate_size: Literal["チョロ", "小", "中", "大", "極大"]
-    bother_level: Literal["楽勝", "普通", "めんどう", "やりたくない"]
+    estimate_size: Literal["大", "中", "小"]
+    bother_level: Literal["チョロ", "まあまあ", "重い"]
     due_date: str
     importance: Literal["低", "中", "高"]
     description: str = ""

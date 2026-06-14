@@ -61,7 +61,7 @@ export function MoodPanel() {
   return (
     <div className="mood-panel">
       <label className="mood-panel-label">
-        ムード
+        今の気分
         <select className="mood-panel-select" value={mood} onChange={handleMoodChange}>
           {MOOD_OPTIONS.map((option) => (
             <option key={option} value={option}>

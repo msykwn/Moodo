@@ -8,9 +8,9 @@ interface Props {
   onSaved: () => void
 }
 
-const BOTHER_LEVELS: BotherLevel[] = ["楽勝", "普通", "めんどう", "やりたくない"]
+const BOTHER_LEVELS: BotherLevel[] = ["チョロ", "まあまあ", "重い"]
 const IMPORTANCES: Importance[] = ["低", "中", "高"]
-const ESTIMATE_SIZES: EstimateSize[] = ["チョロ", "小", "中", "大", "極大"]
+const ESTIMATE_SIZES: EstimateSize[] = ["小", "中", "大"]
 
 function ToggleGroup<T extends string>({
   label,
@@ -79,8 +79,8 @@ function buildInitialForm(editingTask: EditingTask): TaskCreate {
   if ("__new" in editingTask) {
     return {
       title: "",
-      estimate_size: "中" as EstimateSize,
-      bother_level: "普通",
+      estimate_size: "中",
+      bother_level: "まあまあ",
       due_date: todayISO(),
       importance: "中",
       description: "",
@@ -259,7 +259,7 @@ export function TaskModal({ editingTask, onClose, onSaved }: Props) {
             {dueDateError && <span className="field-error">{dueDateError}</span>}
           </label>
           <ToggleGroup
-            label="重要度"
+            label="優先度"
             options={IMPORTANCES}
             value={form.importance}
             onChange={(v) => setForm({ ...form, importance: v })}
