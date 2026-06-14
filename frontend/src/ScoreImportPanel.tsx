@@ -45,7 +45,8 @@ export function ScoreImportPanel({ onImported }: Props) {
       onImported()
     } catch (e) {
       setStatus("error")
-      setErrorMessage(e instanceof Error ? e.message : "インポートに失敗しました")
+      const msg = e instanceof Error ? e.message : ""
+      setErrorMessage(msg.includes("422") ? "スコアの形式が正しくありません（0〜100の数値か null を指定してください）" : "インポートに失敗しました")
     }
   }
 
