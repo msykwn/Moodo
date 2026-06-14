@@ -24,11 +24,13 @@ function App() {
     <div className="app">
       <header className="app-header">
         <h1>Moodo</h1>
-        <button className="btn-add" onClick={() => setEditingTask(NEW_TASK)}>
-          + タスクを追加
-        </button>
+        <div className="app-header-right">
+          <MoodPanel />
+          <button className="btn-add" onClick={() => setEditingTask(NEW_TASK)}>
+            + タスクを追加
+          </button>
+        </div>
       </header>
-      <MoodPanel />
       <main>
         <TaskList refresh={refresh} onEdit={handleEdit} />
       </main>
