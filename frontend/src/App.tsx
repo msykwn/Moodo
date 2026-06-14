@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { MoodPanel } from "./MoodPanel"
+import { ScoreImportPanel } from "./ScoreImportPanel"
 import { TaskList } from "./TaskList"
 import { TaskModal } from "./TaskModal"
 import type { EditingTask, Task } from "./types"
@@ -31,6 +32,7 @@ function App() {
       <MoodPanel />
       <main>
         <TaskList refresh={refresh} onEdit={handleEdit} />
+        <ScoreImportPanel onImported={() => setRefresh((n) => n + 1)} />
       </main>
       <TaskModal
         key={editingTask === null ? 'closed' : ('__new' in editingTask ? 'new' : editingTask.id)}

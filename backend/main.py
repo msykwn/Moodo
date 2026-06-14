@@ -41,6 +41,15 @@ class Mood(BaseModel):
     available_hours: float
 
 
+class ScoreItem(BaseModel):
+    id: str
+    score: int
+
+
+class ScoreImport(BaseModel):
+    tasks: list[ScoreItem]
+
+
 def _read_json(path: Path, default):
     if not path.exists():
         return default
@@ -108,6 +117,17 @@ def delete_task(task_id: str):
     if len(new_tasks) == len(tasks):
         raise HTTPException(status_code=404, detail="Task not found")
     _write_json(TASKS_FILE, new_tasks)
+
+
+@app.post("/import", response_model=list[Task])
+def import_scores(payload: ScoreImport):
+    tasks = _read_json(TASKS_FILE, [])
+    score_map = {item.id: item.score for item in payload.tasks}
+    for task in tasks:
+        if task["id"] in score_map:
+            task["score"] = score_map[task["id"]]
+    _write_json(TASKS_FILE, tasks)
+    return tasks
 
 
 @app.get("/mood")
