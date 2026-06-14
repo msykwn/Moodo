@@ -3,14 +3,14 @@ export const SCORE_THRESHOLDS = {
   mid: 40,
 } as const
 
-export function scoreColor(score: number | null): string {
-  if (score === null) return "#9ca3af"
-  if (score >= SCORE_THRESHOLDS.high) return "#22c55e"
-  if (score >= SCORE_THRESHOLDS.mid) return "#f97316"
-  return "#9ca3af"
+export function scoreClass(score: number | null): string {
+  if (score === null) return "task-score task-score--none"
+  if (score >= SCORE_THRESHOLDS.high) return "task-score task-score--high"
+  if (score >= SCORE_THRESHOLDS.mid) return "task-score task-score--mid"
+  return "task-score task-score--low"
 }
 
 export function scoreLabel(score: number | null): string {
   if (score === null) return "未評価"
-  return `${score}%`
+  return `${score}`
 }
