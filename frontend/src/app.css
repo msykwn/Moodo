@@ -90,6 +90,18 @@ body {
   color: #6b7280;
 }
 
+.task-card--urgent {
+  border-color: #fca5a5;
+  background: #fff7f7;
+}
+
+.badge-urgent {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 1rem;
+  vertical-align: middle;
+}
+
 .task-actions {
   display: flex;
   gap: 8px;
@@ -327,5 +339,47 @@ body {
   font-size: 0.8rem;
   color: #ef4444;
   margin-top: 2px;
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-group-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.btn-toggle-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.btn-toggle {
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 0.875rem;
+  color: #374151;
+  cursor: pointer;
+}
+
+.btn-toggle:hover {
+  background: #f3f4f6;
+}
+
+.btn-toggle--active {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: #fff;
+}
+
+.btn-toggle--active:hover {
+  background: #2563eb;
 }
 
