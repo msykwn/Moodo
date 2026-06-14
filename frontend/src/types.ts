@@ -11,6 +11,14 @@ export interface Task {
   score: number | null
 }
 
+export interface TaskCreate {
+  title: string
+  estimate_hours: number
+  bother_level: BotherLevel
+  due_date: string
+  importance: Importance
+}
+
 export type EditingTask = Task | { readonly __new: true }
 
 export interface Mood {
