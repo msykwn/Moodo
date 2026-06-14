@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { fetchMood, saveMood } from "./api"
 
-const MOOD_OPTIONS = ["絶好調", "普通", "だるい", "最悪"] as const
+const MOOD_OPTIONS = ["良い", "普通", "微妙", "悪い"] as const
 
 type FeedbackState = "idle" | "saved" | "error"
 
