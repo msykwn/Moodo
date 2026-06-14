@@ -6,24 +6,11 @@
 
 ## 起動方法
 
-ターミナルを2つ開いて、それぞれ起動する。
-
-**バックエンド**
-
 ```bash
-cd backend
-uv run uvicorn main:app --reload
+./start.sh
 ```
 
-**フロントエンド**
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-ブラウザで http://localhost:5173 を開く。
+ブラウザで http://localhost:5173 を開く。Ctrl+C で両サーバーを同時に停止できる。
 
 ## AI評価の使い方
 
