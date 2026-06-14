@@ -1,1 +1,4 @@
-{"mood": "普通", "available_hours": 2}
+{
+  "mood": "だるい",
+  "available_hours": 2.0
+}
