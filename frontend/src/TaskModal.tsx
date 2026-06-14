@@ -11,13 +11,20 @@ interface Props {
 const BOTHER_LEVELS: BotherLevel[] = ["楽勝", "普通", "めんどう", "やりたくない"]
 const IMPORTANCES: Importance[] = ["低", "中", "高"]
 
+function todayISO(): string {
+  const now = new Date()
+  const mm = String(now.getMonth() + 1).padStart(2, "0")
+  const dd = String(now.getDate()).padStart(2, "0")
+  return `${now.getFullYear()}-${mm}-${dd}`
+}
+
 function buildInitialForm(editingTask: EditingTask): TaskCreate {
   if ("__new" in editingTask) {
     return {
       title: "",
       estimate_minutes: 60,
       bother_level: "普通",
-      due_date: "",
+      due_date: todayISO(),
       importance: "中",
       description: "",
     }
@@ -60,7 +67,7 @@ export function TaskModal({ editingTask, onClose, onSaved }: Props) {
   const initialForm = editingTask ? buildInitialForm(editingTask) : buildInitialForm({ __new: true })
   const [form, setForm] = useState<TaskCreate>(initialForm)
   const [dueDateInput, setDueDateInput] = useState(() => {
-    const initial = editingTask && !("__new" in editingTask) ? editingTask.due_date : ""
+    const initial = editingTask && !("__new" in editingTask) ? editingTask.due_date : todayISO()
     return formatDueDateForDisplay(initial)
   })
   const [dueDateError, setDueDateError] = useState<string | null>(null)
