@@ -1,0 +1,32 @@
+# Moodo
+
+気分・空き時間をもとにAIがタスクのおすすめ度をスコアリングしてくれる、気分優先のタスク管理アプリ。
+
+タスクに「作業見積もり・めんどくさレベル・期限・重要度」を設定し、今の気分と空き時間を入力すると、Claude がどのタスクに取り組むべきかをスコア（0〜100%）で教えてくれる。
+
+## 起動方法
+
+ターミナルを2つ開いて、それぞれ起動する。
+
+**バックエンド**
+
+```bash
+cd backend
+uv run uvicorn main:app --reload
+```
+
+**フロントエンド**
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+ブラウザで http://localhost:5173 を開く。
+
+## AI評価の使い方
+
+1. `backend/tasks.json` と `backend/mood.json` を Claude Code（またはClaude.ai）に渡す
+2. 「各タスクのおすすめスコア（0〜100）をJSONで返してください」と依頼する
+3. 返ってきたJSONをアプリ下部の「AIスコアのインポート」欄に貼り付けてインポートする
