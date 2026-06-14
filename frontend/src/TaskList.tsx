@@ -13,6 +13,19 @@ function parseDueDate(due_date: string): number {
   return isNaN(t) ? Infinity : t
 }
 
+function formatDueDate(isoDate: string): string {
+  if (!isoDate) return ""
+  const parts = isoDate.split("-")
+  if (parts.length !== 3) return isoDate
+  return `${parts[1]}/${parts[2]}`
+}
+
+function formatEstimateMinutes(minutes: number): string {
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  return `${h}:${String(m).padStart(2, "0")}`
+}
+
 export function TaskList({ refresh, onEdit }: Props) {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
@@ -44,7 +57,8 @@ export function TaskList({ refresh, onEdit }: Props) {
     return () => controller.abort()
   }, [refresh])
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string, title: string) => {
+    if (!window.confirm(`「${title}」を削除しますか？`)) return
     setDeleteError(null)
     try {
       await deleteTask(id)
@@ -70,13 +84,13 @@ export function TaskList({ refresh, onEdit }: Props) {
             <div className="task-body">
               <p className="task-title">{task.title}</p>
               <p className="task-meta">
-                {task.due_date} &nbsp;|&nbsp; {task.estimate_hours}h &nbsp;|&nbsp;
+                {formatDueDate(task.due_date)} &nbsp;|&nbsp; {formatEstimateMinutes(task.estimate_minutes)} &nbsp;|&nbsp;
                 {task.bother_level} &nbsp;|&nbsp; 重要度: {task.importance}
               </p>
             </div>
             <div className="task-actions">
               <button onClick={() => onEdit(task)}>編集</button>
-              <button onClick={() => handleDelete(task.id)}>削除</button>
+              <button onClick={() => handleDelete(task.id, task.title)}>削除</button>
             </div>
           </li>
         ))}

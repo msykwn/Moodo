@@ -26,10 +26,11 @@ MOOD_FILE = Path(__file__).parent / "mood.json"
 
 class TaskCreate(BaseModel):
     title: str
-    estimate_hours: float
+    estimate_minutes: int = Field(..., ge=1)
     bother_level: Literal["楽勝", "普通", "めんどう", "やりたくない"]
     due_date: str
     importance: Literal["低", "中", "高"]
+    description: str = ""
 
 
 class Task(TaskCreate):
