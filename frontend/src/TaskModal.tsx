@@ -160,11 +160,9 @@ export function TaskModal({ editingTask, onClose, onSaved }: Props) {
           <label>
             作業見積もり（分）
             <input
-              type="number"
-              min={1}
-              step={1}
+              type="text"
+              inputMode="numeric"
               value={form.estimate_minutes}
-              required
               onChange={(e) => {
                 const v = parseInt(e.target.value, 10)
                 if (!isNaN(v) && v >= 1) setForm({ ...form, estimate_minutes: v })
