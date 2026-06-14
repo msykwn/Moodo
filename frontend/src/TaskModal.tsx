@@ -222,7 +222,7 @@ export function TaskModal({ editingTask, onClose, onSaved }: Props) {
             詳細
             <textarea
               value={form.description}
-              rows={4}
+              rows={2}
               placeholder="メモ・手順・リンクなど（任意）"
               onChange={(e) => setForm({ ...form, description: e.target.value })}
             />
