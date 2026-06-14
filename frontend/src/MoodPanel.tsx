@@ -7,14 +7,14 @@ type FeedbackState = "idle" | "saved" | "error"
 
 export function MoodPanel() {
   const [mood, setMood] = useState<string>(MOOD_OPTIONS[1])
-  const [availableHours, setAvailableHours] = useState<number>(1)
+  const [availableMinutes, setAvailableMinutes] = useState<number>(60)
   const [feedback, setFeedback] = useState<FeedbackState>("idle")
   const [errorMessage, setErrorMessage] = useState<string>("")
   const [initialized, setInitialized] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const latestMoodRef = useRef<string>(MOOD_OPTIONS[1])
-  const latestHoursRef = useRef<number>(1)
+  const latestMinutesRef = useRef<number>(60)
 
   useEffect(() => {
     fetchMood()
@@ -24,8 +24,8 @@ export function MoodPanel() {
           latestMoodRef.current = data.mood
         }
         if (data.available_minutes !== null) {
-          setAvailableHours(data.available_minutes)
-          latestHoursRef.current = data.available_minutes
+          setAvailableMinutes(data.available_minutes)
+          latestMinutesRef.current = data.available_minutes
         }
       })
       .catch(() => {
@@ -43,7 +43,7 @@ export function MoodPanel() {
   const triggerSave = () => {
     if (debounceRef.current !== null) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
-      saveMood({ mood: latestMoodRef.current, available_minutes: latestHoursRef.current })
+      saveMood({ mood: latestMoodRef.current, available_minutes: latestMinutesRef.current })
         .then(() => {
           setFeedback("saved")
           setErrorMessage("")
@@ -64,11 +64,11 @@ export function MoodPanel() {
     if (initialized) triggerSave()
   }
 
-  const handleHoursChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseFloat(e.target.value)
-    if (isNaN(value)) return
-    setAvailableHours(value)
-    latestHoursRef.current = value
+  const handleMinutesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value, 10)
+    if (isNaN(value) || value < 1) return
+    setAvailableMinutes(value)
+    latestMinutesRef.current = value
     if (initialized) triggerSave()
   }
 
@@ -89,11 +89,10 @@ export function MoodPanel() {
           空き時間（分）
           <input
             className="mood-panel-input"
-            type="number"
-            min={1}
-            step={1}
-            value={availableHours}
-            onChange={handleHoursChange}
+            type="text"
+            inputMode="numeric"
+            value={availableMinutes}
+            onChange={handleMinutesChange}
           />
         </label>
       </div>
