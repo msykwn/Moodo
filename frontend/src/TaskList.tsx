@@ -41,9 +41,11 @@ export function TaskList({ refresh, onEdit }: Props) {
     setLoading(true)
     fetchTasks(controller.signal)
       .then((data) => {
-        const sorted = [...data].sort(
-          (a, b) => parseDueDate(a.due_date) - parseDueDate(b.due_date)
-        )
+        const sorted = [...data].sort((a, b) => {
+          const scoreDiff = (b.score ?? -1) - (a.score ?? -1)
+          if (scoreDiff !== 0) return scoreDiff
+          return parseDueDate(a.due_date) - parseDueDate(b.due_date)
+        })
         setTasks(sorted)
         setError(null)
       })
