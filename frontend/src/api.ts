@@ -47,3 +47,13 @@ export async function saveMood(data: { mood: string; available_hours: number }):
   })
   if (!res.ok) throw new Error(`Failed to save mood: ${res.status}`)
 }
+
+export async function importScores(payload: { tasks: { id: string; score: number }[] }): Promise<Task[]> {
+  const res = await fetch(`${BASE_URL}/import`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) throw new Error(`Failed to import scores: ${res.status}`)
+  return res.json()
+}

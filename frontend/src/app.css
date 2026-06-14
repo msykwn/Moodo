@@ -267,3 +267,69 @@ body {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* ScoreImportPanel */
+.score-import-panel {
+  margin-top: 2rem;
+  padding: 1.25rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f9fafb;
+}
+
+.score-import-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem;
+}
+
+.score-import-guide {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin: 0 0 0.75rem;
+}
+
+.score-import-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: monospace;
+  font-size: 0.8rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 8px;
+  resize: vertical;
+  background: #fff;
+}
+
+.score-import-btn {
+  margin-top: 0.75rem;
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.score-import-btn:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.score-import-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.score-import-feedback {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.score-import-feedback.success {
+  color: #22c55e;
+}
+
+.score-import-feedback.error {
+  color: #ef4444;
+}
