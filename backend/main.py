@@ -40,7 +40,6 @@ class Task(TaskCreate):
 
 class Mood(BaseModel):
     mood: str
-    available_minutes: int
 
 
 def _read_json(path: Path, default):
@@ -115,7 +114,7 @@ def delete_task(task_id: str):
 @app.get("/mood")
 def get_mood():
     data = _read_json(MOOD_FILE, {})
-    return data if data else {"mood": None, "available_minutes": None}
+    return data if data else {"mood": None}
 
 
 @app.put("/mood", response_model=Mood)

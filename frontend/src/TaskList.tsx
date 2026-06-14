@@ -80,11 +80,13 @@ export function TaskList({ refresh, onEdit }: Props) {
       <ul className="task-list">
         {tasks.map((task) => (
           <li key={task.id} className="task-card">
-            <div className="task-score" style={{ color: scoreColor(task.score) }}>
-              {scoreLabel(task.score)}
-            </div>
             <div className="task-body">
-              <p className="task-title">{task.title}</p>
+              <p className="task-title">
+                <span className="task-score" style={{ color: scoreColor(task.score) }}>
+                  {scoreLabel(task.score)}
+                </span>
+                {task.title}
+              </p>
               <p className="task-meta">
                 {formatDueDate(task.due_date)} &nbsp;|&nbsp; {formatEstimateMinutes(task.estimate_minutes)} &nbsp;|&nbsp;
                 {task.bother_level} &nbsp;|&nbsp; 重要度: {task.importance}

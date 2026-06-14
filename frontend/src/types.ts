@@ -25,5 +25,4 @@ export type EditingTask = Task | { readonly __new: true }
 
 export interface Mood {
   mood: string
-  available_minutes: number
 }
