@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import type { Task } from "./types"
 import { fetchTasks, deleteTask } from "./api"
-import { scoreColor, scoreLabel } from "./score"
+import { scoreClass, scoreLabel } from "./score"
 
 interface Props {
   refresh: number
@@ -96,17 +96,20 @@ export function TaskList({ refresh, onEdit }: Props) {
       <ul className="task-list">
         {tasks.map((task) => (
           <li key={task.id} className={`task-card${isUrgent(task) ? " task-card--urgent" : ""}`}>
+            <div className={scoreClass(task.score)}>{scoreLabel(task.score)}</div>
             <div className="task-body">
               <p className="task-title">
-                <span className="task-score" style={{ color: scoreColor(task.score) }}>
-                  {scoreLabel(task.score)}
-                </span>
                 {task.title}
                 {isUrgent(task) && <span className="badge-urgent">🔥</span>}
               </p>
               <p className="task-meta">
-                {formatDueDate(task.due_date)} &nbsp;|&nbsp; {task.estimate_size} &nbsp;|&nbsp;
-                {task.bother_level} &nbsp;|&nbsp; 重要度: {task.importance}
+                {formatDueDate(task.due_date)}
+                &nbsp;·&nbsp;
+                {task.estimate_size}
+                &nbsp;·&nbsp;
+                {task.bother_level}
+                &nbsp;·&nbsp;
+                重要度 {task.importance}
               </p>
             </div>
             <div className="task-actions">
