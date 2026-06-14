@@ -23,9 +23,9 @@ export function MoodPanel() {
           setMood(data.mood)
           latestMoodRef.current = data.mood
         }
-        if (data.available_hours !== null) {
-          setAvailableHours(data.available_hours)
-          latestHoursRef.current = data.available_hours
+        if (data.available_minutes !== null) {
+          setAvailableHours(data.available_minutes)
+          latestHoursRef.current = data.available_minutes
         }
       })
       .catch(() => {
@@ -43,7 +43,7 @@ export function MoodPanel() {
   const triggerSave = () => {
     if (debounceRef.current !== null) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
-      saveMood({ mood: latestMoodRef.current, available_hours: latestHoursRef.current })
+      saveMood({ mood: latestMoodRef.current, available_minutes: latestHoursRef.current })
         .then(() => {
           setFeedback("saved")
           setErrorMessage("")
@@ -86,12 +86,12 @@ export function MoodPanel() {
           </select>
         </label>
         <label className="mood-panel-label">
-          空き時間（時間）
+          空き時間（分）
           <input
             className="mood-panel-input"
             type="number"
-            min={0.5}
-            step={0.5}
+            min={1}
+            step={1}
             value={availableHours}
             onChange={handleHoursChange}
           />

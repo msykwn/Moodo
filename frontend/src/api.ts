@@ -33,13 +33,13 @@ export async function updateTask(id: string, data: TaskCreate): Promise<Task> {
   return res.json()
 }
 
-export async function fetchMood(): Promise<{ mood: string | null; available_hours: number | null }> {
+export async function fetchMood(): Promise<{ mood: string | null; available_minutes: number | null }> {
   const res = await fetch(`${BASE_URL}/mood`)
   if (!res.ok) throw new Error(`Failed to fetch mood: ${res.status}`)
   return res.json()
 }
 
-export async function saveMood(data: { mood: string; available_hours: number }): Promise<void> {
+export async function saveMood(data: { mood: string; available_minutes: number }): Promise<void> {
   const res = await fetch(`${BASE_URL}/mood`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
