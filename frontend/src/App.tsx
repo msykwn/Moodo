@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { MoodPanel } from "./MoodPanel"
 import { TaskList } from "./TaskList"
 import { TaskModal } from "./TaskModal"
@@ -14,6 +14,20 @@ function App() {
   const handleEdit = (task: Task) => {
     setEditingTask(task)
   }
+
+  const openNewTaskModal = useCallback(() => {
+    setEditingTask(NEW_TASK)
+  }, [])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Enter" && e.ctrlKey && editingTask === null) {
+        openNewTaskModal()
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [editingTask, openNewTaskModal])
 
   const handleTaskSaved = () => {
     setEditingTask(null)

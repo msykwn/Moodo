@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react"
-import type { BotherLevel, EditingTask, Importance, TaskCreate } from "./types"
+import type { BotherLevel, EditingTask, EstimateSize, Importance, TaskCreate } from "./types"
 import { createTask, updateTask } from "./api"
 
 interface Props {
@@ -10,6 +10,63 @@ interface Props {
 
 const BOTHER_LEVELS: BotherLevel[] = ["楽勝", "普通", "めんどう", "やりたくない"]
 const IMPORTANCES: Importance[] = ["低", "中", "高"]
+const ESTIMATE_SIZES: EstimateSize[] = ["チョロ", "小", "中", "大", "極大"]
+
+function ToggleGroup<T extends string>({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string
+  options: readonly T[]
+  value: T
+  onChange: (v: T) => void
+}) {
+  const refs = useRef<(HTMLButtonElement | null)[]>([])
+
+  const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
+    let next = index
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+      e.preventDefault()
+      next = (index + 1) % options.length
+    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      e.preventDefault()
+      next = (index - 1 + options.length) % options.length
+    } else {
+      return
+    }
+    const target = refs.current[next]
+    if (target) {
+      target.tabIndex = 0
+      target.focus()
+    }
+    onChange(options[next])
+  }
+
+  return (
+    <div className="field-group">
+      <span className="field-group-label">{label}</span>
+      <div className="btn-toggle-group" role="radiogroup" aria-label={label}>
+        {options.map((opt, i) => (
+          <button
+            key={opt}
+            ref={(el) => { refs.current[i] = el }}
+            type="button"
+            role="radio"
+            aria-checked={value === opt}
+            tabIndex={value === opt ? 0 : -1}
+            className={`btn-toggle${value === opt ? " btn-toggle--active" : ""}`}
+            onClick={() => onChange(opt)}
+            onKeyDown={(e) => handleKeyDown(e, i)}
+          >
+            {opt}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 function todayISO(): string {
   const now = new Date()
@@ -22,7 +79,7 @@ function buildInitialForm(editingTask: EditingTask): TaskCreate {
   if ("__new" in editingTask) {
     return {
       title: "",
-      estimate_minutes: 60,
+      estimate_size: "中" as EstimateSize,
       bother_level: "普通",
       due_date: todayISO(),
       importance: "中",
@@ -31,7 +88,7 @@ function buildInitialForm(editingTask: EditingTask): TaskCreate {
   }
   return {
     title: editingTask.title,
-    estimate_minutes: editingTask.estimate_minutes,
+    estimate_size: editingTask.estimate_size ?? "中",
     bother_level: editingTask.bother_level,
     due_date: editingTask.due_date,
     importance: editingTask.importance,
@@ -75,8 +132,6 @@ export function TaskModal({ editingTask, onClose, onSaved }: Props) {
   const [submitting, setSubmitting] = useState(false)
   const dateInputRef = useRef<HTMLInputElement>(null)
 
-  // formRef allows handleSubmit (registered as a global keydown listener) to
-  // always read the latest form state without being recreated on every keystroke.
   const formRef = useRef(form)
   formRef.current = form
   const dueDateInputRef = useRef(dueDateInput)
@@ -154,32 +209,22 @@ export function TaskModal({ editingTask, onClose, onSaved }: Props) {
               type="text"
               value={form.title}
               required
+              autoFocus
               onChange={(e) => setForm({ ...form, title: e.target.value })}
             />
           </label>
-          <label>
-            作業見積もり（分）
-            <input
-              type="text"
-              inputMode="numeric"
-              value={form.estimate_minutes}
-              onChange={(e) => {
-                const v = parseInt(e.target.value, 10)
-                if (!isNaN(v) && v >= 1) setForm({ ...form, estimate_minutes: v })
-              }}
-            />
-          </label>
-          <label>
-            めんどくさレベル
-            <select
-              value={form.bother_level}
-              onChange={(e) => setForm({ ...form, bother_level: e.target.value as BotherLevel })}
-            >
-              {BOTHER_LEVELS.map((level) => (
-                <option key={level} value={level}>{level}</option>
-              ))}
-            </select>
-          </label>
+          <ToggleGroup
+            label="作業見積もり"
+            options={ESTIMATE_SIZES}
+            value={form.estimate_size}
+            onChange={(v) => setForm({ ...form, estimate_size: v })}
+          />
+          <ToggleGroup
+            label="めんどくさレベル"
+            options={BOTHER_LEVELS}
+            value={form.bother_level}
+            onChange={(v) => setForm({ ...form, bother_level: v })}
+          />
           <label>
             期限
             <div className="due-date-input-wrapper">
@@ -193,13 +238,14 @@ export function TaskModal({ editingTask, onClose, onSaved }: Props) {
                 }}
                 onBlur={handleDueDateBlur}
               />
-              <button type="button" className="btn-calendar" onClick={openDatePicker} aria-label="カレンダーを開く">
+              <button type="button" className="btn-calendar" onClick={openDatePicker} aria-label="カレンダーを開く" tabIndex={-1}>
                 📅
               </button>
               <input
                 ref={dateInputRef}
                 type="date"
                 className="date-picker-hidden"
+                tabIndex={-1}
                 onChange={(e) => {
                   const iso = e.target.value
                   if (iso) {
@@ -212,17 +258,12 @@ export function TaskModal({ editingTask, onClose, onSaved }: Props) {
             </div>
             {dueDateError && <span className="field-error">{dueDateError}</span>}
           </label>
-          <label>
-            重要度
-            <select
-              value={form.importance}
-              onChange={(e) => setForm({ ...form, importance: e.target.value as Importance })}
-            >
-              {IMPORTANCES.map((imp) => (
-                <option key={imp} value={imp}>{imp}</option>
-              ))}
-            </select>
-          </label>
+          <ToggleGroup
+            label="重要度"
+            options={IMPORTANCES}
+            value={form.importance}
+            onChange={(v) => setForm({ ...form, importance: v })}
+          />
           <label>
             詳細
             <textarea

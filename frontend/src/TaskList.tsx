@@ -13,18 +13,31 @@ function parseDueDate(due_date: string): number {
   return isNaN(t) ? Infinity : t
 }
 
+function todayLocalISO(): string {
+  const now = new Date()
+  const mm = String(now.getMonth() + 1).padStart(2, "0")
+  const dd = String(now.getDate()).padStart(2, "0")
+  return `${now.getFullYear()}-${mm}-${dd}`
+}
+
+function isUrgent(task: Task): boolean {
+  return task.due_date === todayLocalISO() && task.importance === "高"
+}
+
 function formatDueDate(isoDate: string): string {
   if (!isoDate) return ""
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const due = new Date(isoDate)
+  due.setHours(0, 0, 0, 0)
+  const diffDays = Math.round((due.getTime() - today.getTime()) / 86400000)
+  if (diffDays === 0) return "今日"
+  if (diffDays === 1) return "明日"
+  if (diffDays === 2) return "明後日"
   const parts = isoDate.split("-")
-  if (parts.length !== 3) return isoDate
   return `${parts[1]}/${parts[2]}`
 }
 
-function formatEstimateMinutes(minutes: number): string {
-  const h = Math.floor(minutes / 60)
-  const m = minutes % 60
-  return `${h}:${String(m).padStart(2, "0")}`
-}
 
 export function TaskList({ refresh, onEdit }: Props) {
   const [tasks, setTasks] = useState<Task[]>([])
@@ -41,10 +54,13 @@ export function TaskList({ refresh, onEdit }: Props) {
     setLoading(true)
     fetchTasks(controller.signal)
       .then((data) => {
+        const importanceRank: Record<string, number> = { 低: 0, 中: 1, 高: 2 }
         const sorted = [...data].sort((a, b) => {
           const scoreDiff = (b.score ?? -1) - (a.score ?? -1)
           if (scoreDiff !== 0) return scoreDiff
-          return parseDueDate(a.due_date) - parseDueDate(b.due_date)
+          const dueDiff = parseDueDate(a.due_date) - parseDueDate(b.due_date)
+          if (dueDiff !== 0) return dueDiff
+          return (importanceRank[b.importance] ?? -Infinity) - (importanceRank[a.importance] ?? -Infinity)
         })
         setTasks(sorted)
         setError(null)
@@ -79,16 +95,17 @@ export function TaskList({ refresh, onEdit }: Props) {
       {deleteError && <p className="status-message error">{deleteError}</p>}
       <ul className="task-list">
         {tasks.map((task) => (
-          <li key={task.id} className="task-card">
+          <li key={task.id} className={`task-card${isUrgent(task) ? " task-card--urgent" : ""}`}>
             <div className="task-body">
               <p className="task-title">
                 <span className="task-score" style={{ color: scoreColor(task.score) }}>
                   {scoreLabel(task.score)}
                 </span>
                 {task.title}
+                {isUrgent(task) && <span className="badge-urgent">🔥</span>}
               </p>
               <p className="task-meta">
-                {formatDueDate(task.due_date)} &nbsp;|&nbsp; {formatEstimateMinutes(task.estimate_minutes)} &nbsp;|&nbsp;
+                {formatDueDate(task.due_date)} &nbsp;|&nbsp; {task.estimate_size} &nbsp;|&nbsp;
                 {task.bother_level} &nbsp;|&nbsp; 重要度: {task.importance}
               </p>
             </div>

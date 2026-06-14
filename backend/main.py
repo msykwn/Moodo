@@ -5,8 +5,7 @@ import uuid
 from pathlib import Path
 from typing import Literal
 
-from fastapi import FastAPI, HTTPException
-from pydantic import Field
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -26,7 +25,7 @@ MOOD_FILE = Path(__file__).parent / "mood.json"
 
 class TaskCreate(BaseModel):
     title: str
-    estimate_minutes: int = Field(..., ge=1)
+    estimate_size: Literal["チョロ", "小", "中", "大", "極大"]
     bother_level: Literal["楽勝", "普通", "めんどう", "やりたくない"]
     due_date: str
     importance: Literal["低", "中", "高"]
@@ -92,7 +91,7 @@ def update_task(task_id: str, task_in: TaskCreate):
 
 
 @app.patch("/tasks/{task_id}/score", response_model=Task)
-def update_score(task_id: str, score: int | None):
+def update_score(task_id: str, score: int | None = Query(default=None, ge=0, le=100)):
     tasks = _read_json(TASKS_FILE, [])
     for i, task in enumerate(tasks):
         if task["id"] == task_id:
