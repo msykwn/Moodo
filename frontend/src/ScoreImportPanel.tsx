@@ -7,11 +7,16 @@ interface Props {
 
 export function ScoreImportPanel({ onImported }: Props) {
   const [json, setJson] = useState("")
-  const [status, setStatus] = useState<"idle" | "success" | "error">("idle")
+  const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle")
   const [errorMessage, setErrorMessage] = useState("")
 
+  const handleJsonChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setJson(e.target.value)
+    if (status === "success" || status === "error") setStatus("idle")
+  }
+
   const handleImport = async () => {
-    setStatus("idle")
+    setStatus("submitting")
     setErrorMessage("")
 
     let parsed: unknown
@@ -34,7 +39,7 @@ export function ScoreImportPanel({ onImported }: Props) {
     }
 
     try {
-      await importScores(parsed as { tasks: { id: string; score: number }[] })
+      await importScores(parsed as { tasks: { id: string; score: number | null }[] })
       setJson("")
       setStatus("success")
       onImported()
@@ -53,16 +58,16 @@ export function ScoreImportPanel({ onImported }: Props) {
       <textarea
         className="score-import-textarea"
         value={json}
-        onChange={(e) => setJson(e.target.value)}
+        onChange={handleJsonChange}
         placeholder={'{"tasks": [{"id": "...", "score": 85}, ...]}'}
         rows={6}
       />
       <button
         className="score-import-btn"
         onClick={handleImport}
-        disabled={json.trim() === ""}
+        disabled={json.trim() === "" || status === "submitting"}
       >
-        スコアをインポート
+        {status === "submitting" ? "インポート中..." : "スコアをインポート"}
       </button>
       {status === "success" && (
         <p className="score-import-feedback success">インポートしました</p>

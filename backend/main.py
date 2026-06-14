@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException
+from pydantic import Field
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -43,7 +44,7 @@ class Mood(BaseModel):
 
 class ScoreItem(BaseModel):
     id: str
-    score: int
+    score: float | None = Field(None, ge=0, le=100)
 
 
 class ScoreImport(BaseModel):
@@ -125,7 +126,8 @@ def import_scores(payload: ScoreImport):
     score_map = {item.id: item.score for item in payload.tasks}
     for task in tasks:
         if task["id"] in score_map:
-            task["score"] = score_map[task["id"]]
+            raw = score_map[task["id"]]
+            task["score"] = round(raw) if raw is not None else None
     _write_json(TASKS_FILE, tasks)
     return tasks
 
