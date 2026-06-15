@@ -28,7 +28,7 @@ class TaskCreate(BaseModel):
     estimate_size: Literal["大", "中", "小"]
     bother_level: Literal["チョロ", "まあまあ", "重い"]
     due_date: str
-    importance: Literal["低", "中", "高"]
+    importance: Literal["低", "普通", "高"]
     description: str = ""
 
 

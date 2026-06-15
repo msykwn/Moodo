@@ -54,7 +54,7 @@ export function TaskList({ refresh, onEdit }: Props) {
     setLoading(true)
     fetchTasks(controller.signal)
       .then((data) => {
-        const importanceRank: Record<string, number> = { 低: 0, 中: 1, 高: 2 }
+        const importanceRank: Record<string, number> = { 低: 0, 普通: 1, 高: 2 }
         const sorted = [...data].sort((a, b) => {
           const scoreDiff = (b.score ?? -1) - (a.score ?? -1)
           if (scoreDiff !== 0) return scoreDiff
