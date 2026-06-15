@@ -19,18 +19,27 @@ function isUrgent(task: Task): boolean {
   return task.due_date === todayLocalISO() && task.importance === "高"
 }
 
-function formatDueDate(isoDate: string): string {
-  if (!isoDate) return ""
+function diffDaysFromToday(isoDate: string): number {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const due = new Date(isoDate)
   due.setHours(0, 0, 0, 0)
-  const diffDays = Math.round((due.getTime() - today.getTime()) / 86400000)
+  return Math.round((due.getTime() - today.getTime()) / 86400000)
+}
+
+function formatDueDate(isoDate: string): string {
+  if (!isoDate) return ""
+  const diffDays = diffDaysFromToday(isoDate)
   if (diffDays === 0) return "今日"
   if (diffDays === 1) return "明日"
   if (diffDays === 2) return "明後日"
   const parts = isoDate.split("-")
   return `${parts[1]}/${parts[2]}`
+}
+
+function isOverdue(isoDate: string): boolean {
+  if (!isoDate) return false
+  return diffDaysFromToday(isoDate) < 0
 }
 
 
@@ -90,7 +99,7 @@ export function TaskList({ refresh, onEdit }: Props) {
       {deleteError && <p className="status-message error">{deleteError}</p>}
       <ul className="task-list">
         {tasks.map((task) => (
-          <li key={task.id} className={`task-card${isUrgent(task) ? " task-card--urgent" : ""}`}>
+          <li key={task.id} className={`task-card${isUrgent(task) ? " task-card--urgent" : ""}`} onClick={() => onEdit(task)}>
             <div className={scoreClass(task.score)}>{scoreLabel(task.score)}</div>
             <div className="task-body">
               <p className="task-title">
@@ -98,15 +107,15 @@ export function TaskList({ refresh, onEdit }: Props) {
                 {isUrgent(task) && <span className="badge-urgent">🔥</span>}
               </p>
               <div className="task-chips">
-                <span className="chip chip--due">{formatDueDate(task.due_date)}</span>
+                <span className={`chip chip--due${isOverdue(task.due_date) ? " chip--overdue" : ""}`}>{formatDueDate(task.due_date)}</span>
                 <span className="chip chip--estimate">{task.estimate_size}</span>
                 <span className="chip chip--bother">{task.bother_level}</span>
                 <span className="chip chip--importance">{task.importance}</span>
               </div>
             </div>
             <div className="task-actions">
-              <button onClick={() => onEdit(task)}>編集</button>
-              <button onClick={() => handleDelete(task.id, task.title)}>削除</button>
+              <button onClick={(e) => { e.stopPropagation(); onEdit(task) }}>編集</button>
+              <button onClick={(e) => { e.stopPropagation(); handleDelete(task.id, task.title) }}>削除</button>
             </div>
           </li>
         ))}
