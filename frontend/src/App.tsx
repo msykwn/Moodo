@@ -25,8 +25,21 @@ function App() {
         openNewTaskModal()
       }
     }
+    const handleDblClick = (e: MouseEvent) => {
+      if (
+        editingTask === null &&
+        e.target instanceof Element &&
+        !e.target.closest(".task-card, .app-header, .modal-backdrop, .status-message")
+      ) {
+        openNewTaskModal()
+      }
+    }
     window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
+    window.addEventListener("dblclick", handleDblClick)
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown)
+      window.removeEventListener("dblclick", handleDblClick)
+    }
   }, [editingTask, openNewTaskModal])
 
   const handleTaskSaved = () => {

@@ -102,15 +102,12 @@ export function TaskList({ refresh, onEdit }: Props) {
                 {task.title}
                 {isUrgent(task) && <span className="badge-urgent">🔥</span>}
               </p>
-              <p className="task-meta">
-                {formatDueDate(task.due_date)}
-                &nbsp;·&nbsp;
-                {task.estimate_size}
-                &nbsp;·&nbsp;
-                {task.bother_level}
-                &nbsp;·&nbsp;
-                重要度 {task.importance}
-              </p>
+              <div className="task-chips">
+                <span className="chip chip--due">{formatDueDate(task.due_date)}</span>
+                <span className="chip chip--estimate">{task.estimate_size}</span>
+                <span className="chip chip--bother">{task.bother_level}</span>
+                <span className="chip chip--importance">{task.importance}</span>
+              </div>
             </div>
             <div className="task-actions">
               <button onClick={() => onEdit(task)}>編集</button>
