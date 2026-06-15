@@ -9,7 +9,7 @@ interface Props {
 }
 
 const BOTHER_LEVELS: BotherLevel[] = ["チョロ", "まあまあ", "重い"]
-const IMPORTANCES: Importance[] = ["低", "中", "高"]
+const IMPORTANCES: Importance[] = ["低", "普通", "高"]
 const ESTIMATE_SIZES: EstimateSize[] = ["小", "中", "大"]
 
 function ToggleGroup<T extends string>({
@@ -82,7 +82,7 @@ function buildInitialForm(editingTask: EditingTask): TaskCreate {
       estimate_size: "中",
       bother_level: "まあまあ",
       due_date: todayISO(),
-      importance: "中",
+      importance: "普通",
       description: "",
     }
   }

@@ -1,5 +1,5 @@
 export type BotherLevel = "チョロ" | "まあまあ" | "重い"
-export type Importance = "低" | "中" | "高"
+export type Importance = "低" | "普通" | "高"
 export type EstimateSize = "大" | "中" | "小"
 
 export interface Task {
