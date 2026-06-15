@@ -22,11 +22,11 @@ export function MoodPanel() {
           latestMoodRef.current = data.mood
         }
       })
+      .then(() => setInitialized(true))
       .catch(() => {
         setFeedback("error")
         setErrorMessage("設定の読み込みに失敗しました")
       })
-      .finally(() => setInitialized(true))
 
     return () => {
       if (debounceRef.current !== null) clearTimeout(debounceRef.current)

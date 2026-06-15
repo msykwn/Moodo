@@ -1,6 +1,7 @@
 import json
 import os
 import tempfile
+import threading
 import uuid
 from pathlib import Path
 from typing import Literal
@@ -8,6 +9,8 @@ from typing import Literal
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+
+_file_lock = threading.Lock()
 
 app = FastAPI()
 
@@ -34,7 +37,7 @@ class TaskCreate(BaseModel):
 
 class Task(TaskCreate):
     id: str
-    score: int | None = None
+    score: float | None = None
 
 
 class Mood(BaseModel):
@@ -71,43 +74,47 @@ def get_tasks():
 
 @app.post("/tasks", response_model=Task, status_code=201)
 def create_task(task_in: TaskCreate):
-    tasks = _read_json(TASKS_FILE, [])
-    new_task = {"id": str(uuid.uuid4()), "score": None, **task_in.model_dump()}
-    tasks.append(new_task)
-    _write_json(TASKS_FILE, tasks)
+    with _file_lock:
+        tasks = _read_json(TASKS_FILE, [])
+        new_task = {"id": str(uuid.uuid4()), "score": None, **task_in.model_dump()}
+        tasks.append(new_task)
+        _write_json(TASKS_FILE, tasks)
     return new_task
 
 
 @app.put("/tasks/{task_id}", response_model=Task)
 def update_task(task_id: str, task_in: TaskCreate):
-    tasks = _read_json(TASKS_FILE, [])
-    for i, task in enumerate(tasks):
-        if task["id"] == task_id:
-            updated = {"id": task_id, "score": task.get("score"), **task_in.model_dump()}
-            tasks[i] = updated
-            _write_json(TASKS_FILE, tasks)
-            return updated
+    with _file_lock:
+        tasks = _read_json(TASKS_FILE, [])
+        for i, task in enumerate(tasks):
+            if task["id"] == task_id:
+                updated = {"id": task_id, "score": task.get("score"), **task_in.model_dump()}
+                tasks[i] = updated
+                _write_json(TASKS_FILE, tasks)
+                return updated
     raise HTTPException(status_code=404, detail="Task not found")
 
 
 @app.patch("/tasks/{task_id}/score", response_model=Task)
-def update_score(task_id: str, score: int | None = Query(default=None, ge=0, le=100)):
-    tasks = _read_json(TASKS_FILE, [])
-    for i, task in enumerate(tasks):
-        if task["id"] == task_id:
-            tasks[i]["score"] = score
-            _write_json(TASKS_FILE, tasks)
-            return tasks[i]
+def update_score(task_id: str, score: float | None = Query(default=None, ge=0, le=100)):
+    with _file_lock:
+        tasks = _read_json(TASKS_FILE, [])
+        for i, task in enumerate(tasks):
+            if task["id"] == task_id:
+                tasks[i]["score"] = score
+                _write_json(TASKS_FILE, tasks)
+                return tasks[i]
     raise HTTPException(status_code=404, detail="Task not found")
 
 
 @app.delete("/tasks/{task_id}", status_code=204)
 def delete_task(task_id: str):
-    tasks = _read_json(TASKS_FILE, [])
-    new_tasks = [t for t in tasks if t["id"] != task_id]
-    if len(new_tasks) == len(tasks):
-        raise HTTPException(status_code=404, detail="Task not found")
-    _write_json(TASKS_FILE, new_tasks)
+    with _file_lock:
+        tasks = _read_json(TASKS_FILE, [])
+        new_tasks = [t for t in tasks if t["id"] != task_id]
+        if len(new_tasks) == len(tasks):
+            raise HTTPException(status_code=404, detail="Task not found")
+        _write_json(TASKS_FILE, new_tasks)
 
 
 @app.get("/mood")
@@ -118,5 +125,6 @@ def get_mood():
 
 @app.put("/mood", response_model=Mood)
 def update_mood(mood: Mood):
-    _write_json(MOOD_FILE, mood.model_dump())
+    with _file_lock:
+        _write_json(MOOD_FILE, mood.model_dump())
     return mood

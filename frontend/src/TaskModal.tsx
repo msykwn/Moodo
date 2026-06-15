@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import type { BotherLevel, EditingTask, EstimateSize, Importance, TaskCreate } from "./types"
 import { createTask, updateTask } from "./api"
+import { todayLocalISO } from "./utils"
 
 interface Props {
   editingTask: EditingTask | null
@@ -68,12 +69,6 @@ function ToggleGroup<T extends string>({
   )
 }
 
-function todayISO(): string {
-  const now = new Date()
-  const mm = String(now.getMonth() + 1).padStart(2, "0")
-  const dd = String(now.getDate()).padStart(2, "0")
-  return `${now.getFullYear()}-${mm}-${dd}`
-}
 
 function buildInitialForm(editingTask: EditingTask): TaskCreate {
   if ("__new" in editingTask) {
@@ -81,7 +76,7 @@ function buildInitialForm(editingTask: EditingTask): TaskCreate {
       title: "",
       estimate_size: "中",
       bother_level: "まあまあ",
-      due_date: todayISO(),
+      due_date: todayLocalISO(),
       importance: "普通",
       description: "",
     }
@@ -105,7 +100,10 @@ function parseDueDateInput(input: string): string | null {
   const day = parseInt(digits.slice(2, 4), 10)
   if (month < 1 || month > 12 || day < 1 || day > 31) return null
   const now = new Date()
-  const year = now.getMonth() + 1 > month ? now.getFullYear() + 1 : now.getFullYear()
+  const nowMonth = now.getMonth() + 1
+  const nowDay = now.getDate()
+  const isPast = nowMonth > month || (nowMonth === month && nowDay > day)
+  const year = isPast ? now.getFullYear() + 1 : now.getFullYear()
   const date = new Date(year, month - 1, day)
   if (date.getMonth() !== month - 1 || date.getDate() !== day) return null
   const mm = String(month).padStart(2, "0")
@@ -124,7 +122,7 @@ export function TaskModal({ editingTask, onClose, onSaved }: Props) {
   const initialForm = editingTask ? buildInitialForm(editingTask) : buildInitialForm({ __new: true })
   const [form, setForm] = useState<TaskCreate>(initialForm)
   const [dueDateInput, setDueDateInput] = useState(() => {
-    const initial = editingTask && !("__new" in editingTask) ? editingTask.due_date : todayISO()
+    const initial = editingTask && !("__new" in editingTask) ? editingTask.due_date : todayLocalISO()
     return formatDueDateForDisplay(initial)
   })
   const [dueDateError, setDueDateError] = useState<string | null>(null)
@@ -144,6 +142,11 @@ export function TaskModal({ editingTask, onClose, onSaved }: Props) {
   const handleSubmit = useCallback(async (e?: React.FormEvent) => {
     e?.preventDefault()
     if (submittingRef.current) return
+
+    if (!formRef.current.title.trim()) {
+      setError("タイトルを入力してください")
+      return
+    }
 
     const parsed = parseDueDateInput(dueDateInputRef.current)
     if (parsed === null) {

@@ -3,14 +3,14 @@
 ## ファイル
 
 - `/Users/piyo/repository/Moodo/backend/tasks.json` … タスク一覧。各タスクの title・期限（due_date）・作業見積もり（estimate_size: 小/中/大）・めんどくさレベル（bother_level）・重要度（importance）・詳細（description）を持つ
-- `/Users/piyo/repository/Moodo/backend/mood.json` … 現在の気分（mood）と空き時間（available_minutes・分）
+- `/Users/piyo/repository/Moodo/backend/mood.json` … 現在の気分（mood）
 
 ## スコアリングの考え方
 
 - 気分が良いほど、めんどくさいタスクにも取り組める
-- 作業規模（チョロ < 小 < 中 < 大 < 極大）が小さいほど着手しやすく、気分が微妙・悪いときは小規模タスクを優先する
+- 作業見積もり（小 < 中 < 大）が小さいほど着手しやすく、気分が微妙・悪いときは小規模タスクを優先する
 - 期限が近いほど優先度が上がる
-- 重要度（高 > 中 > 低）が高いほど優先度が上がる
+- 優先度（高 > 普通 > 低）が高いほどスコアが上がる
 - めんどくさレベル（チョロ < まあまあ < 重い）は気分と掛け合わせて評価する。気分が良いほど「重い」タスクにも取り組める
 
 ## 作業内容
