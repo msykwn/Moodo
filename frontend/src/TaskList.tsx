@@ -140,7 +140,6 @@ export function TaskList({ refresh, onEdit, onComplete }: Props) {
   const pickupTasks = tasks
     .filter((t) => daysSinceCreated(t.created_at) >= BURIED_THRESHOLD_DAYS)
     .sort((a, b) => (a.created_at ?? "").localeCompare(b.created_at ?? ""))
-    .slice(0, 3)
 
   const pickupIds = new Set(pickupTasks.map((t) => t.id))
   const mainTasks = tasks.filter((t) => !pickupIds.has(t.id))
@@ -160,13 +159,36 @@ export function TaskList({ refresh, onEdit, onComplete }: Props) {
   )
 }
 
+const PICKUP_PAGE_SIZE = 3
+const PICKUP_INTERVAL_MS = 3000
+
 export function PickupSection({ tasks, onEdit, onComplete }: PickupSectionProps) {
+  const [pageIndex, setPageIndex] = useState(0)
+  const pageCount = Math.ceil(tasks.length / PICKUP_PAGE_SIZE)
+
+  useEffect(() => {
+    if (pageCount <= 1) return
+    const timer = setInterval(() => {
+      setPageIndex((i) => (i + 1) % pageCount)
+    }, PICKUP_INTERVAL_MS)
+    return () => clearInterval(timer)
+  }, [pageCount])
+
+  // タスク数が変わったときにページが範囲外にならないよう補正
+  const safePageIndex = pageIndex % pageCount
+  const visibleTasks = tasks.slice(safePageIndex * PICKUP_PAGE_SIZE, (safePageIndex + 1) * PICKUP_PAGE_SIZE)
+
   return (
     <div className="pickup-section">
       <div className="pickup-section-inner">
-        <h2 className="pickup-section-title">ピックアップ</h2>
-        <ul className="pickup-list">
-          {tasks.map((task) => (
+        <h2 className="pickup-section-title">
+          ピックアップ
+          {pageCount > 1 && (
+            <span className="pickup-section-pager">{safePageIndex + 1} / {pageCount}</span>
+          )}
+        </h2>
+        <ul className="pickup-list" key={safePageIndex}>
+          {visibleTasks.map((task) => (
             <TaskCard key={task.id} task={task} onEdit={onEdit} onComplete={onComplete} />
           ))}
         </ul>

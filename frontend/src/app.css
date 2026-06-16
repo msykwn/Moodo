@@ -521,6 +521,28 @@ main {
   text-transform: uppercase;
   letter-spacing: 0.1em;
   margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pickup-section-pager {
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: #c4b5fd;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+@keyframes pickup-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .pickup-list {
@@ -528,6 +550,7 @@ main {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 5px;
+  animation: pickup-slide-in 1s ease-out;
 }
 
 .pickup-list .task-card {
