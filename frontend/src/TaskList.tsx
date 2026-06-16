@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react"
 import type { Task } from "./types"
-import { fetchTasks, deleteTask } from "./api"
+import { fetchTasks, completeTask } from "./api"
 import { scoreClass, scoreLabel } from "./score"
 import { todayLocalISO } from "./utils"
 
 interface Props {
   refresh: number
   onEdit: (task: Task) => void
+  onComplete?: () => void
 }
 
 function parseDueDate(due_date: string): number {
@@ -43,11 +44,11 @@ function isOverdue(isoDate: string): boolean {
 }
 
 
-export function TaskList({ refresh, onEdit }: Props) {
+export function TaskList({ refresh, onEdit, onComplete }: Props) {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [completeError, setCompleteError] = useState<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
@@ -79,14 +80,15 @@ export function TaskList({ refresh, onEdit }: Props) {
     return () => controller.abort()
   }, [refresh])
 
-  const handleDelete = async (id: string, title: string) => {
-    if (!window.confirm(`「${title}」を削除しますか？`)) return
-    setDeleteError(null)
+  const handleComplete = async (id: string, title: string) => {
+    setCompleteError(null)
+    if (!window.confirm(`「${title}」を完了にしますか？`)) return
     try {
-      await deleteTask(id)
+      await completeTask(id)
       setTasks((prev) => prev.filter((t) => t.id !== id))
+      onComplete?.()
     } catch (e) {
-      setDeleteError(e instanceof Error ? e.message : "削除に失敗しました")
+      setCompleteError(e instanceof Error ? e.message : "完了にできませんでした")
     }
   }
 
@@ -96,7 +98,7 @@ export function TaskList({ refresh, onEdit }: Props) {
 
   return (
     <>
-      {deleteError && <p className="status-message error">{deleteError}</p>}
+      {completeError && <p className="status-message error">{completeError}</p>}
       <ul className="task-list">
         {tasks.map((task) => (
           <li key={task.id} className={`task-card${isUrgent(task) ? " task-card--urgent" : ""}`} onClick={() => onEdit(task)}>
@@ -115,7 +117,7 @@ export function TaskList({ refresh, onEdit }: Props) {
             </div>
             <div className="task-actions">
               <button onClick={(e) => { e.stopPropagation(); onEdit(task) }}>編集</button>
-              <button onClick={(e) => { e.stopPropagation(); handleDelete(task.id, task.title) }}>削除</button>
+              <button onClick={(e) => { e.stopPropagation(); handleComplete(task.id, task.title) }}>完了</button>
             </div>
           </li>
         ))}

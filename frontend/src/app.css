@@ -281,13 +281,31 @@ body {
 }
 
 .task-actions button:last-child {
-  color: #ef4444;
-  border-color: #fecaca;
+  color: #16a34a;
+  border-color: #bbf7d0;
 }
 
 .task-actions button:last-child:hover {
-  border-color: #ef4444;
-  background: #fff7f7;
+  border-color: #16a34a;
+  background: #f0fdf4;
+}
+
+/* 完了統計 */
+.completion-stats {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.completion-stat {
+  font-size: 0.78rem;
+  color: #6d6a80;
+}
+
+.completion-stat strong {
+  color: #16a34a;
+  font-weight: 700;
+  font-size: 0.9rem;
 }
 
 /* モーダル */

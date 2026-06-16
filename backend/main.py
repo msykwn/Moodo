@@ -3,6 +3,7 @@ import os
 import tempfile
 import threading
 import uuid
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Literal
 
@@ -23,6 +24,7 @@ app.add_middleware(
 )
 
 TASKS_FILE = Path(__file__).parent / "tasks.json"
+COMPLETED_TASKS_FILE = Path(__file__).parent / "completed_tasks.json"
 MOOD_FILE = Path(__file__).parent / "mood.json"
 
 
@@ -38,6 +40,10 @@ class TaskCreate(BaseModel):
 class Task(TaskCreate):
     id: str
     score: float | None = None
+
+
+class CompletedTask(Task):
+    completed_date: str
 
 
 class Mood(BaseModel):
@@ -105,6 +111,52 @@ def update_score(task_id: str, score: float | None = Query(default=None, ge=0, l
                 _write_json(TASKS_FILE, tasks)
                 return tasks[i]
     raise HTTPException(status_code=404, detail="Task not found")
+
+
+@app.patch("/tasks/{task_id}/complete", response_model=CompletedTask)
+def complete_task(task_id: str):
+    with _file_lock:
+        tasks = _read_json(TASKS_FILE, [])
+        completed_tasks = _read_json(COMPLETED_TASKS_FILE, [])
+        for i, task in enumerate(tasks):
+            if task["id"] == task_id:
+                completed = {**task, "completed_date": date.today().isoformat()}
+                tasks.pop(i)
+                completed_tasks.append(completed)
+                _write_json(TASKS_FILE, tasks)
+                _write_json(COMPLETED_TASKS_FILE, completed_tasks)
+                return completed
+    raise HTTPException(status_code=404, detail="Task not found")
+
+
+class CompletionStats(BaseModel):
+    today: int
+    this_week: int
+
+
+@app.get("/stats/completions", response_model=CompletionStats)
+def get_completion_stats():
+    with _file_lock:
+        completed_tasks = _read_json(COMPLETED_TASKS_FILE, [])
+    today = date.today()
+    week_start = today - timedelta(days=today.weekday())
+
+    today_count = 0
+    week_count = 0
+    for task in completed_tasks:
+        raw = task.get("completed_date")
+        if not raw:
+            continue
+        try:
+            d = date.fromisoformat(raw)
+        except ValueError:
+            continue
+        if d == today:
+            today_count += 1
+        if d >= week_start:
+            week_count += 1
+
+    return {"today": today_count, "this_week": week_count}
 
 
 @app.delete("/tasks/{task_id}", status_code=204)

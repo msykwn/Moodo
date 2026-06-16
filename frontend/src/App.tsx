@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react"
+import { CompletionStatsPanel } from "./CompletionStats"
 import { MoodPanel } from "./MoodPanel"
 import { TaskList } from "./TaskList"
 import { TaskModal } from "./TaskModal"
@@ -52,6 +53,7 @@ function App() {
       <header className="app-header">
         <h1>Moodo</h1>
         <div className="app-header-right">
+          <CompletionStatsPanel refresh={refresh} />
           <MoodPanel />
           <button className="btn-add" onClick={() => setEditingTask(NEW_TASK)}>
             + タスクを追加
@@ -59,7 +61,7 @@ function App() {
         </div>
       </header>
       <main>
-        <TaskList refresh={refresh} onEdit={handleEdit} />
+        <TaskList refresh={refresh} onEdit={handleEdit} onComplete={() => setRefresh((n) => n + 1)} />
       </main>
       <TaskModal
         key={editingTask === null ? 'closed' : ('__new' in editingTask ? 'new' : editingTask.id)}
