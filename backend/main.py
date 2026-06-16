@@ -129,9 +129,10 @@ def complete_task(task_id: str):
                 # completed_mood: mood.json から取得。失敗時は None
                 completed_mood: str | None = None
                 try:
-                    mood_data = _read_json(MOOD_FILE, {})
-                    if mood_data and "mood" in mood_data:
-                        completed_mood = mood_data["mood"]
+                    if MOOD_FILE.exists():
+                        with MOOD_FILE.open("r", encoding="utf-8") as f:
+                            mood_data = json.load(f)
+                        completed_mood = mood_data.get("mood")
                 except Exception:
                     pass
 
