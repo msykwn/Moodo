@@ -154,8 +154,7 @@ export function TaskList({ refresh, onEdit, onComplete }: Props) {
     ...(buriedTasks.length > 0 ? [{ title: "積みタスク", tasks: buriedTasks }] : []),
   ]
 
-  const pickupIds = new Set([...todayTasks, ...buriedTasks].map((t) => t.id))
-  const mainTasks = tasks.filter((t) => !pickupIds.has(t.id))
+  const mainTasks = tasks
 
   return (
     <>
