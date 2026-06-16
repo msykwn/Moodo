@@ -11,6 +11,7 @@ export interface Task {
   importance: Importance
   score: number | null
   description: string
+  created_at: string | null
 }
 
 export interface CompletionStats {

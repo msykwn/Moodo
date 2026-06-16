@@ -10,6 +10,12 @@ interface Props {
   onComplete?: () => void
 }
 
+export interface PickupSectionProps {
+  tasks: Task[]
+  onEdit: (task: Task) => void
+  onComplete: (id: string, title: string) => void
+}
+
 function parseDueDate(due_date: string): number {
   const t = new Date(due_date).getTime()
   return isNaN(t) ? Infinity : t
@@ -43,6 +49,41 @@ function isOverdue(isoDate: string): boolean {
   return diffDaysFromToday(isoDate) < 0
 }
 
+const BURIED_THRESHOLD_DAYS = 7
+
+function daysSinceCreated(createdAt: string | null): number {
+  if (!createdAt) return 0
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const created = new Date(createdAt)
+  created.setHours(0, 0, 0, 0)
+  return Math.round((today.getTime() - created.getTime()) / 86400000)
+}
+
+
+function TaskCard({ task, onEdit, onComplete }: { task: Task; onEdit: (t: Task) => void; onComplete: (id: string, title: string) => void }) {
+  return (
+    <li className={`task-card${isUrgent(task) ? " task-card--urgent" : ""}`} onClick={() => onEdit(task)}>
+      <div className={scoreClass(task.score)}>{scoreLabel(task.score)}</div>
+      <div className="task-body">
+        <p className="task-title">
+          {task.title}
+          {isUrgent(task) && <span className="badge-urgent">🔥</span>}
+        </p>
+        <div className="task-chips">
+          <span className={`chip chip--due${isOverdue(task.due_date) ? " chip--overdue" : ""}`}>{formatDueDate(task.due_date)}</span>
+          <span className="chip chip--estimate">{task.estimate_size}</span>
+          <span className="chip chip--bother">{task.bother_level}</span>
+          <span className="chip chip--importance">{task.importance}</span>
+        </div>
+      </div>
+      <div className="task-actions">
+        <button onClick={(e) => { e.stopPropagation(); onEdit(task) }}>編集</button>
+        <button onClick={(e) => { e.stopPropagation(); onComplete(task.id, task.title) }}>完了</button>
+      </div>
+    </li>
+  )
+}
 
 export function TaskList({ refresh, onEdit, onComplete }: Props) {
   const [tasks, setTasks] = useState<Task[]>([])
@@ -96,32 +137,40 @@ export function TaskList({ refresh, onEdit, onComplete }: Props) {
   if (error) return <p className="status-message error">{error}</p>
   if (tasks.length === 0) return <p className="status-message">タスクがありません。追加してみましょう！</p>
 
+  const pickupTasks = tasks
+    .filter((t) => daysSinceCreated(t.created_at) >= BURIED_THRESHOLD_DAYS)
+    .sort((a, b) => (a.created_at ?? "").localeCompare(b.created_at ?? ""))
+    .slice(0, 3)
+
+  const pickupIds = new Set(pickupTasks.map((t) => t.id))
+  const mainTasks = tasks.filter((t) => !pickupIds.has(t.id))
+
   return (
     <>
       {completeError && <p className="status-message error">{completeError}</p>}
       <ul className="task-list">
-        {tasks.map((task) => (
-          <li key={task.id} className={`task-card${isUrgent(task) ? " task-card--urgent" : ""}`} onClick={() => onEdit(task)}>
-            <div className={scoreClass(task.score)}>{scoreLabel(task.score)}</div>
-            <div className="task-body">
-              <p className="task-title">
-                {task.title}
-                {isUrgent(task) && <span className="badge-urgent">🔥</span>}
-              </p>
-              <div className="task-chips">
-                <span className={`chip chip--due${isOverdue(task.due_date) ? " chip--overdue" : ""}`}>{formatDueDate(task.due_date)}</span>
-                <span className="chip chip--estimate">{task.estimate_size}</span>
-                <span className="chip chip--bother">{task.bother_level}</span>
-                <span className="chip chip--importance">{task.importance}</span>
-              </div>
-            </div>
-            <div className="task-actions">
-              <button onClick={(e) => { e.stopPropagation(); onEdit(task) }}>編集</button>
-              <button onClick={(e) => { e.stopPropagation(); handleComplete(task.id, task.title) }}>完了</button>
-            </div>
-          </li>
+        {mainTasks.map((task) => (
+          <TaskCard key={task.id} task={task} onEdit={onEdit} onComplete={handleComplete} />
         ))}
       </ul>
+      {pickupTasks.length > 0 && (
+        <PickupSection tasks={pickupTasks} onEdit={onEdit} onComplete={handleComplete} />
+      )}
     </>
+  )
+}
+
+export function PickupSection({ tasks, onEdit, onComplete }: PickupSectionProps) {
+  return (
+    <div className="pickup-section">
+      <div className="pickup-section-inner">
+        <h2 className="pickup-section-title">ピックアップ</h2>
+        <ul className="pickup-list">
+          {tasks.map((task) => (
+            <TaskCard key={task.id} task={task} onEdit={onEdit} onComplete={onComplete} />
+          ))}
+        </ul>
+      </div>
+    </div>
   )
 }
