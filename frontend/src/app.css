@@ -120,6 +120,11 @@ body {
   color: #fff;
 }
 
+/* メインコンテンツ — ピックアップ固定エリア分の余白 */
+main {
+  padding-bottom: 180px;
+}
+
 /* ステータスメッセージ */
 .status-message {
   text-align: center;
@@ -489,6 +494,100 @@ body {
   text-transform: none;
   letter-spacing: 0;
   font-weight: 400;
+}
+
+/* ピックアップエリア（画面下部固定） */
+.pickup-section {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  border-top: 1.5px solid #ddd6fe;
+  z-index: 100;
+}
+
+.pickup-section-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 6px 20px 8px;
+}
+
+.pickup-section-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #a78bfa;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pickup-section-pager {
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: #c4b5fd;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+@keyframes pickup-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.pickup-list {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+  animation: pickup-slide-in 1s ease-out;
+}
+
+.pickup-list .task-card {
+  padding: 6px 10px;
+  gap: 8px;
+  align-items: center;
+}
+
+.pickup-list .task-score {
+  min-width: 30px;
+  height: 30px;
+  font-size: 0.8rem;
+}
+
+.pickup-list .task-title {
+  font-size: 0.8rem;
+  margin-bottom: 2px;
+  line-height: 1.2;
+}
+
+.pickup-list .task-chips {
+  gap: 2px;
+  margin-top: 2px;
+}
+
+.pickup-list .chip {
+  font-size: 0.62rem;
+  padding: 1px 4px;
+}
+
+.pickup-list .task-actions {
+  gap: 3px;
+}
+
+.pickup-list .task-actions button {
+  font-size: 0.68rem;
+  padding: 2px 7px;
 }
 
 /* トグルグループ */

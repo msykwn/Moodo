@@ -10,6 +10,17 @@ interface Props {
   onComplete?: () => void
 }
 
+export interface PickupGroup {
+  title: string
+  tasks: Task[]
+}
+
+export interface PickupSectionProps {
+  groups: PickupGroup[]
+  onEdit: (task: Task) => void
+  onComplete: (id: string, title: string) => void
+}
+
 function parseDueDate(due_date: string): number {
   const t = new Date(due_date).getTime()
   return isNaN(t) ? Infinity : t
@@ -43,6 +54,41 @@ function isOverdue(isoDate: string): boolean {
   return diffDaysFromToday(isoDate) < 0
 }
 
+const BURIED_THRESHOLD_DAYS = 7
+
+function daysSinceCreated(createdAt: string | null): number {
+  if (!createdAt) return 0
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const created = new Date(createdAt)
+  created.setHours(0, 0, 0, 0)
+  return Math.round((today.getTime() - created.getTime()) / 86400000)
+}
+
+
+function TaskCard({ task, onEdit, onComplete }: { task: Task; onEdit: (t: Task) => void; onComplete: (id: string, title: string) => void }) {
+  return (
+    <li className={`task-card${isUrgent(task) ? " task-card--urgent" : ""}`} onClick={() => onEdit(task)}>
+      <div className={scoreClass(task.score)}>{scoreLabel(task.score)}</div>
+      <div className="task-body">
+        <p className="task-title">
+          {task.title}
+          {isUrgent(task) && <span className="badge-urgent">🔥</span>}
+        </p>
+        <div className="task-chips">
+          <span className={`chip chip--due${isOverdue(task.due_date) ? " chip--overdue" : ""}`}>{formatDueDate(task.due_date)}</span>
+          <span className="chip chip--estimate">{task.estimate_size}</span>
+          <span className="chip chip--bother">{task.bother_level}</span>
+          <span className="chip chip--importance">{task.importance}</span>
+        </div>
+      </div>
+      <div className="task-actions">
+        <button onClick={(e) => { e.stopPropagation(); onEdit(task) }}>編集</button>
+        <button onClick={(e) => { e.stopPropagation(); onComplete(task.id, task.title) }}>完了</button>
+      </div>
+    </li>
+  )
+}
 
 export function TaskList({ refresh, onEdit, onComplete }: Props) {
   const [tasks, setTasks] = useState<Task[]>([])
@@ -96,32 +142,104 @@ export function TaskList({ refresh, onEdit, onComplete }: Props) {
   if (error) return <p className="status-message error">{error}</p>
   if (tasks.length === 0) return <p className="status-message">タスクがありません。追加してみましょう！</p>
 
+  const todayTasks = tasks.filter((t) => t.due_date === todayLocalISO())
+  const todayIds = new Set(todayTasks.map((t) => t.id))
+
+  const buriedTasks = tasks
+    .filter((t) => !todayIds.has(t.id) && !isOverdue(t.due_date) && daysSinceCreated(t.created_at) >= BURIED_THRESHOLD_DAYS)
+    .sort((a, b) => (a.created_at ?? "").localeCompare(b.created_at ?? ""))
+
+  const pickupGroups: PickupGroup[] = [
+    ...(todayTasks.length > 0 ? [{ title: "今日期限", tasks: todayTasks }] : []),
+    ...(buriedTasks.length > 0 ? [{ title: "積みタスク", tasks: buriedTasks }] : []),
+  ]
+
+  const pickupIds = new Set([...todayTasks, ...buriedTasks].map((t) => t.id))
+  const mainTasks = tasks.filter((t) => !pickupIds.has(t.id))
+
   return (
     <>
       {completeError && <p className="status-message error">{completeError}</p>}
       <ul className="task-list">
-        {tasks.map((task) => (
-          <li key={task.id} className={`task-card${isUrgent(task) ? " task-card--urgent" : ""}`} onClick={() => onEdit(task)}>
-            <div className={scoreClass(task.score)}>{scoreLabel(task.score)}</div>
-            <div className="task-body">
-              <p className="task-title">
-                {task.title}
-                {isUrgent(task) && <span className="badge-urgent">🔥</span>}
-              </p>
-              <div className="task-chips">
-                <span className={`chip chip--due${isOverdue(task.due_date) ? " chip--overdue" : ""}`}>{formatDueDate(task.due_date)}</span>
-                <span className="chip chip--estimate">{task.estimate_size}</span>
-                <span className="chip chip--bother">{task.bother_level}</span>
-                <span className="chip chip--importance">{task.importance}</span>
-              </div>
-            </div>
-            <div className="task-actions">
-              <button onClick={(e) => { e.stopPropagation(); onEdit(task) }}>編集</button>
-              <button onClick={(e) => { e.stopPropagation(); handleComplete(task.id, task.title) }}>完了</button>
-            </div>
-          </li>
+        {mainTasks.map((task) => (
+          <TaskCard key={task.id} task={task} onEdit={onEdit} onComplete={handleComplete} />
         ))}
       </ul>
+      {pickupGroups.length > 0 && (
+        <PickupSection groups={pickupGroups} onEdit={onEdit} onComplete={handleComplete} />
+      )}
     </>
+  )
+}
+
+const PICKUP_PAGE_SIZE = 3
+const PICKUP_INTERVAL_MS = 4500
+const PICKUP_RESHOW_MS = 30000
+
+export function PickupSection({ groups, onEdit, onComplete }: PickupSectionProps) {
+  // 全グループのページを連結したフラットなスロット列を作る
+  // 例: 今日期限2件 → 1ページ、積みタスク5件 → 2ページ → 計3スロット
+  const slots = groups.flatMap((group) => {
+    const pageCount = Math.ceil(group.tasks.length / PICKUP_PAGE_SIZE)
+    return Array.from({ length: pageCount }, (_, i) => ({
+      title: group.title,
+      tasks: group.tasks.slice(i * PICKUP_PAGE_SIZE, (i + 1) * PICKUP_PAGE_SIZE),
+      page: i + 1,
+      pageCount,
+    }))
+  })
+
+  const totalSlots = slots.length
+  const [slotIndex, setSlotIndex] = useState(0)
+  const [visible, setVisible] = useState(true)
+
+  useEffect(() => {
+    setSlotIndex(0)
+    setVisible(true)
+  }, [totalSlots])
+
+  useEffect(() => {
+    if (!visible) {
+      const timer = setTimeout(() => {
+        setSlotIndex(0)
+        setVisible(true)
+      }, PICKUP_RESHOW_MS)
+      return () => clearTimeout(timer)
+    }
+
+    const timer = setInterval(() => {
+      setSlotIndex((i) => {
+        const next = i + 1
+        if (next >= totalSlots) {
+          setVisible(false)
+          return 0
+        }
+        return next
+      })
+    }, PICKUP_INTERVAL_MS)
+    return () => clearInterval(timer)
+  }, [visible, totalSlots])
+
+  if (!visible) return null
+
+  const current = slots[slotIndex] ?? slots[0]
+  if (!current) return null
+
+  return (
+    <div className="pickup-section">
+      <div className="pickup-section-inner">
+        <h2 className="pickup-section-title">
+          {current.title}
+          {current.pageCount > 1 && (
+            <span className="pickup-section-pager">{current.page} / {current.pageCount}</span>
+          )}
+        </h2>
+        <ul className="pickup-list" key={slotIndex}>
+          {current.tasks.map((task) => (
+            <TaskCard key={task.id} task={task} onEdit={onEdit} onComplete={onComplete} />
+          ))}
+        </ul>
+      </div>
+    </div>
   )
 }

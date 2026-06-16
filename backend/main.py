@@ -40,6 +40,7 @@ class TaskCreate(BaseModel):
 class Task(TaskCreate):
     id: str
     score: float | None = None
+    created_at: str | None = None
 
 
 class CompletedTask(Task):
@@ -82,7 +83,7 @@ def get_tasks():
 def create_task(task_in: TaskCreate):
     with _file_lock:
         tasks = _read_json(TASKS_FILE, [])
-        new_task = {"id": str(uuid.uuid4()), "score": None, **task_in.model_dump()}
+        new_task = {"id": str(uuid.uuid4()), "score": None, "created_at": date.today().isoformat(), **task_in.model_dump()}
         tasks.append(new_task)
         _write_json(TASKS_FILE, tasks)
     return new_task
@@ -94,7 +95,7 @@ def update_task(task_id: str, task_in: TaskCreate):
         tasks = _read_json(TASKS_FILE, [])
         for i, task in enumerate(tasks):
             if task["id"] == task_id:
-                updated = {"id": task_id, "score": task.get("score"), **task_in.model_dump()}
+                updated = {"id": task_id, "score": task.get("score"), "created_at": task.get("created_at"), **task_in.model_dump()}
                 tasks[i] = updated
                 _write_json(TASKS_FILE, tasks)
                 return updated
