@@ -41,6 +41,7 @@ class Task(TaskCreate):
     id: str
     score: float | None = None
     created_at: str | None = None
+    today_flag: bool = False
 
 
 class CompletedTask(Task):
@@ -109,6 +110,22 @@ def update_score(task_id: str, score: float | None = Query(default=None, ge=0, l
         for i, task in enumerate(tasks):
             if task["id"] == task_id:
                 tasks[i]["score"] = score
+                _write_json(TASKS_FILE, tasks)
+                return tasks[i]
+    raise HTTPException(status_code=404, detail="Task not found")
+
+
+class TodayFlagUpdate(BaseModel):
+    today_flag: bool
+
+
+@app.patch("/tasks/{task_id}/today_flag", response_model=Task)
+def update_today_flag(task_id: str, body: TodayFlagUpdate):
+    with _file_lock:
+        tasks = _read_json(TASKS_FILE, [])
+        for i, task in enumerate(tasks):
+            if task["id"] == task_id:
+                tasks[i]["today_flag"] = body.today_flag
                 _write_json(TASKS_FILE, tasks)
                 return tasks[i]
     raise HTTPException(status_code=404, detail="Task not found")

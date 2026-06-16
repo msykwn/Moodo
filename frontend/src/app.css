@@ -685,3 +685,45 @@ main {
 .btn-toggle--active:hover {
   background: rgba(124, 58, 237, 0.15);
 }
+
+/* 今日やるフラグ */
+.task-card--today {
+  background: #fffbeb;
+  border-color: #fbbf24;
+}
+
+.task-card--today:hover {
+  background: #fef3c7;
+  border-color: #f59e0b;
+}
+
+.btn-today-flag {
+  background: none;
+  border: 1.5px solid #ddd6fe;
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-family: inherit;
+  color: #c4b5fd;
+  font-weight: 500;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.btn-today-flag:hover {
+  border-color: #fbbf24;
+  color: #f59e0b;
+  background: #fef3c7;
+}
+
+.btn-today-flag--on {
+  color: #d97706;
+  border-color: #fbbf24;
+  background: #fef3c7;
+  font-weight: 700;
+}
+
+.btn-today-flag--on:hover {
+  border-color: #f59e0b;
+  background: #fde68a;
+}
