@@ -45,6 +45,9 @@ class Task(TaskCreate):
 
 class CompletedTask(Task):
     completed_date: str
+    completed_mood: str | None = None
+    days_to_complete: int | None = None
+    due_diff_days: int | None = None
 
 
 class Mood(BaseModel):
@@ -121,7 +124,42 @@ def complete_task(task_id: str):
         completed_tasks = _read_json(COMPLETED_TASKS_FILE, [])
         for i, task in enumerate(tasks):
             if task["id"] == task_id:
-                completed = {**task, "completed_date": date.today().isoformat()}
+                completed_date = date.today().isoformat()
+
+                # completed_mood: mood.json から取得。失敗時は None
+                completed_mood: str | None = None
+                try:
+                    mood_data = _read_json(MOOD_FILE, {})
+                    if mood_data and "mood" in mood_data:
+                        completed_mood = mood_data["mood"]
+                except Exception:
+                    pass
+
+                # days_to_complete: 作成日からの経過日数。created_at が null の場合は None
+                days_to_complete: int | None = None
+                try:
+                    created_at = task.get("created_at")
+                    if created_at:
+                        days_to_complete = (date.fromisoformat(completed_date) - date.fromisoformat(created_at)).days
+                except Exception:
+                    pass
+
+                # due_diff_days: 完了日 - 期限日。プラス=遅延、マイナス=早期完了。due_date が null の場合は None
+                due_diff_days: int | None = None
+                try:
+                    due_date = task.get("due_date")
+                    if due_date:
+                        due_diff_days = (date.fromisoformat(completed_date) - date.fromisoformat(due_date)).days
+                except Exception:
+                    pass
+
+                completed = {
+                    **task,
+                    "completed_date": completed_date,
+                    "completed_mood": completed_mood,
+                    "days_to_complete": days_to_complete,
+                    "due_diff_days": due_diff_days,
+                }
                 tasks.pop(i)
                 completed_tasks.append(completed)
                 _write_json(TASKS_FILE, tasks)
