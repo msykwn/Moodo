@@ -27,6 +27,20 @@ function parseDueDate(due_date: string): number {
   return isNaN(t) ? Infinity : t
 }
 
+const importanceRank: Record<string, number> = { 低: 0, 普通: 1, 高: 2 }
+
+function sortTasks(tasks: Task[]): Task[] {
+  return [...tasks].sort((a, b) => {
+    const todayDiff = ((b.today_flag ?? false) ? 1 : 0) - ((a.today_flag ?? false) ? 1 : 0)
+    if (todayDiff !== 0) return todayDiff
+    const scoreDiff = (b.score ?? -1) - (a.score ?? -1)
+    if (scoreDiff !== 0) return scoreDiff
+    const dueDiff = parseDueDate(a.due_date) - parseDueDate(b.due_date)
+    if (dueDiff !== 0) return dueDiff
+    return (importanceRank[b.importance] ?? -Infinity) - (importanceRank[a.importance] ?? -Infinity)
+  })
+}
+
 
 function isUrgent(task: Task): boolean {
   return task.due_date === todayLocalISO() && task.importance === "高"
@@ -114,17 +128,7 @@ export function TaskList({ refresh, onEdit, onComplete }: Props) {
     setLoading(true)
     fetchTasks(controller.signal)
       .then((data) => {
-        const importanceRank: Record<string, number> = { 低: 0, 普通: 1, 高: 2 }
-        const sorted = [...data].sort((a, b) => {
-          const todayDiff = ((b.today_flag ?? false) ? 1 : 0) - ((a.today_flag ?? false) ? 1 : 0)
-          if (todayDiff !== 0) return todayDiff
-          const scoreDiff = (b.score ?? -1) - (a.score ?? -1)
-          if (scoreDiff !== 0) return scoreDiff
-          const dueDiff = parseDueDate(a.due_date) - parseDueDate(b.due_date)
-          if (dueDiff !== 0) return dueDiff
-          return (importanceRank[b.importance] ?? -Infinity) - (importanceRank[a.importance] ?? -Infinity)
-        })
-        setTasks(sorted)
+        setTasks(sortTasks(data))
         setError(null)
       })
       .catch((e) => {
@@ -137,24 +141,15 @@ export function TaskList({ refresh, onEdit, onComplete }: Props) {
     return () => controller.abort()
   }, [refresh])
 
+  const [todayFlagError, setTodayFlagError] = useState<string | null>(null)
+
   const handleTodayFlag = async (id: string, flag: boolean) => {
+    setTodayFlagError(null)
     try {
       const updated = await toggleTodayFlag(id, flag)
-      setTasks((prev) => {
-        const importanceRank: Record<string, number> = { 低: 0, 普通: 1, 高: 2 }
-        const next = prev.map((t) => t.id === id ? updated : t)
-        return next.sort((a, b) => {
-          const todayDiff = ((b.today_flag ?? false) ? 1 : 0) - ((a.today_flag ?? false) ? 1 : 0)
-          if (todayDiff !== 0) return todayDiff
-          const scoreDiff = (b.score ?? -1) - (a.score ?? -1)
-          if (scoreDiff !== 0) return scoreDiff
-          const dueDiff = parseDueDate(a.due_date) - parseDueDate(b.due_date)
-          if (dueDiff !== 0) return dueDiff
-          return (importanceRank[b.importance] ?? -Infinity) - (importanceRank[a.importance] ?? -Infinity)
-        })
-      })
-    } catch {
-      // エラーは無視（UIは変更しない）
+      setTasks((prev) => sortTasks(prev.map((t) => t.id === id ? updated : t)))
+    } catch (e) {
+      setTodayFlagError(e instanceof Error ? e.message : "フラグを更新できませんでした")
     }
   }
 
@@ -191,6 +186,7 @@ export function TaskList({ refresh, onEdit, onComplete }: Props) {
   return (
     <>
       {completeError && <p className="status-message error">{completeError}</p>}
+      {todayFlagError && <p className="status-message error">{todayFlagError}</p>}
       <ul className="task-list">
         {mainTasks.map((task) => (
           <TaskCard key={task.id} task={task} onEdit={onEdit} onComplete={handleComplete} onTodayFlag={handleTodayFlag} />
