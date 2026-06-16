@@ -10,8 +10,13 @@ interface Props {
   onComplete?: () => void
 }
 
-export interface PickupSectionProps {
+export interface PickupGroup {
+  title: string
   tasks: Task[]
+}
+
+export interface PickupSectionProps {
+  groups: PickupGroup[]
   onEdit: (task: Task) => void
   onComplete: (id: string, title: string) => void
 }
@@ -137,11 +142,19 @@ export function TaskList({ refresh, onEdit, onComplete }: Props) {
   if (error) return <p className="status-message error">{error}</p>
   if (tasks.length === 0) return <p className="status-message">タスクがありません。追加してみましょう！</p>
 
-  const pickupTasks = tasks
-    .filter((t) => daysSinceCreated(t.created_at) >= BURIED_THRESHOLD_DAYS)
+  const todayTasks = tasks.filter((t) => t.due_date === todayLocalISO())
+  const todayIds = new Set(todayTasks.map((t) => t.id))
+
+  const buriedTasks = tasks
+    .filter((t) => !todayIds.has(t.id) && daysSinceCreated(t.created_at) >= BURIED_THRESHOLD_DAYS)
     .sort((a, b) => (a.created_at ?? "").localeCompare(b.created_at ?? ""))
 
-  const pickupIds = new Set(pickupTasks.map((t) => t.id))
+  const pickupGroups: PickupGroup[] = [
+    ...(todayTasks.length > 0 ? [{ title: "今日期限", tasks: todayTasks }] : []),
+    ...(buriedTasks.length > 0 ? [{ title: "積みタスク", tasks: buriedTasks }] : []),
+  ]
+
+  const pickupIds = new Set([...todayTasks, ...buriedTasks].map((t) => t.id))
   const mainTasks = tasks.filter((t) => !pickupIds.has(t.id))
 
   return (
@@ -152,43 +165,54 @@ export function TaskList({ refresh, onEdit, onComplete }: Props) {
           <TaskCard key={task.id} task={task} onEdit={onEdit} onComplete={handleComplete} />
         ))}
       </ul>
-      {pickupTasks.length > 0 && (
-        <PickupSection tasks={pickupTasks} onEdit={onEdit} onComplete={handleComplete} />
+      {pickupGroups.length > 0 && (
+        <PickupSection groups={pickupGroups} onEdit={onEdit} onComplete={handleComplete} />
       )}
     </>
   )
 }
 
 const PICKUP_PAGE_SIZE = 3
-const PICKUP_INTERVAL_MS = 3000
+const PICKUP_INTERVAL_MS = 4500
 
-export function PickupSection({ tasks, onEdit, onComplete }: PickupSectionProps) {
-  const [pageIndex, setPageIndex] = useState(0)
-  const pageCount = Math.ceil(tasks.length / PICKUP_PAGE_SIZE)
+export function PickupSection({ groups, onEdit, onComplete }: PickupSectionProps) {
+  // 全グループのページを連結したフラットなスロット列を作る
+  // 例: 今日期限2件 → 1ページ、積みタスク5件 → 2ページ → 計3スロット
+  const slots = groups.flatMap((group) => {
+    const pageCount = Math.ceil(group.tasks.length / PICKUP_PAGE_SIZE)
+    return Array.from({ length: pageCount }, (_, i) => ({
+      title: group.title,
+      tasks: group.tasks.slice(i * PICKUP_PAGE_SIZE, (i + 1) * PICKUP_PAGE_SIZE),
+      page: i + 1,
+      pageCount,
+    }))
+  })
+
+  const totalSlots = slots.length
+  const [slotIndex, setSlotIndex] = useState(0)
 
   useEffect(() => {
-    if (pageCount <= 1) return
+    if (totalSlots <= 1) return
     const timer = setInterval(() => {
-      setPageIndex((i) => (i + 1) % pageCount)
+      setSlotIndex((i) => (i + 1) % totalSlots)
     }, PICKUP_INTERVAL_MS)
     return () => clearInterval(timer)
-  }, [pageCount])
+  }, [totalSlots])
 
-  // タスク数が変わったときにページが範囲外にならないよう補正
-  const safePageIndex = pageIndex % pageCount
-  const visibleTasks = tasks.slice(safePageIndex * PICKUP_PAGE_SIZE, (safePageIndex + 1) * PICKUP_PAGE_SIZE)
+  const safeSlotIndex = slotIndex % totalSlots
+  const current = slots[safeSlotIndex]
 
   return (
     <div className="pickup-section">
       <div className="pickup-section-inner">
         <h2 className="pickup-section-title">
-          ピックアップ
-          {pageCount > 1 && (
-            <span className="pickup-section-pager">{safePageIndex + 1} / {pageCount}</span>
+          {current.title}
+          {current.pageCount > 1 && (
+            <span className="pickup-section-pager">{current.page} / {current.pageCount}</span>
           )}
         </h2>
-        <ul className="pickup-list" key={safePageIndex}>
-          {visibleTasks.map((task) => (
+        <ul className="pickup-list" key={safeSlotIndex}>
+          {current.tasks.map((task) => (
             <TaskCard key={task.id} task={task} onEdit={onEdit} onComplete={onComplete} />
           ))}
         </ul>
