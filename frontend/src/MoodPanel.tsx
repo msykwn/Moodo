@@ -60,16 +60,19 @@ export function MoodPanel() {
 
   return (
     <div className="mood-panel">
-      <label className="mood-panel-label">
+      <label className="mood-panel-label" htmlFor="mood-select">
         今の気分
-        <select className="mood-panel-select" value={mood} onChange={handleMoodChange}>
+      </label>
+      <div className="mood-panel-select-wrapper">
+        <select id="mood-select" className="mood-panel-select" value={mood} onChange={handleMoodChange}>
           {MOOD_OPTIONS.map((option) => (
             <option key={option} value={option}>
               {option}
             </option>
           ))}
         </select>
-      </label>
+        <span className="mood-panel-chevron">▾</span>
+      </div>
       {feedback === "saved" && <span className="mood-panel-feedback mood-panel-feedback--saved">保存しました</span>}
       {feedback === "error" && (
         <span className="mood-panel-feedback mood-panel-feedback--error">{errorMessage}</span>
