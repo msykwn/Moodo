@@ -1,4 +1,4 @@
-import type { CompletionStats, Task, TaskCreate } from "./types"
+import type { CompletionStats, DueStats, Task, TaskCreate } from "./types"
 
 const BASE_URL = "http://localhost:8000"
 
@@ -52,6 +52,12 @@ export async function saveMood(data: { mood: string }): Promise<void> {
 export async function fetchCompletionStats(signal?: AbortSignal): Promise<CompletionStats> {
   const res = await fetch(`${BASE_URL}/stats/completions`, { signal })
   if (!res.ok) throw new Error(`Failed to fetch completion stats: ${res.status}`)
+  return res.json()
+}
+
+export async function fetchDueStats(signal?: AbortSignal): Promise<DueStats> {
+  const res = await fetch(`${BASE_URL}/stats/due`, { signal })
+  if (!res.ok) throw new Error(`Failed to fetch due stats: ${res.status}`)
   return res.json()
 }
 

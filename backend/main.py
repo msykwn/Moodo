@@ -5,11 +5,11 @@ import threading
 import uuid
 from datetime import date, timedelta
 from pathlib import Path
-from typing import Literal
+from typing import Annotated, Literal
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 _file_lock = threading.Lock()
 
@@ -32,7 +32,7 @@ class TaskCreate(BaseModel):
     title: str
     estimate_size: Literal["大", "中", "小"]
     bother_level: Literal["チョロ", "まあまあ", "重い"]
-    due_date: str
+    due_date: Annotated[str, Field(min_length=1)]
     importance: Literal["低", "普通", "高"]
     description: str = ""
 
@@ -158,6 +158,36 @@ def get_completion_stats():
             week_count += 1
 
     return {"today": today_count, "this_week": week_count}
+
+
+class DueStats(BaseModel):
+    due_today: int
+    due_tomorrow: int
+
+
+@app.get("/stats/due", response_model=DueStats)
+def get_due_stats():
+    with _file_lock:
+        tasks = _read_json(TASKS_FILE, [])
+    today = date.today()
+    tomorrow = today + timedelta(days=1)
+
+    due_today = 0
+    due_tomorrow = 0
+    for task in tasks:
+        raw = task.get("due_date")
+        if not raw:
+            continue
+        try:
+            d = date.fromisoformat(raw)
+        except ValueError:
+            continue
+        if d == today:
+            due_today += 1
+        elif d == tomorrow:
+            due_tomorrow += 1
+
+    return {"due_today": due_today, "due_tomorrow": due_tomorrow}
 
 
 @app.delete("/tasks/{task_id}", status_code=204)

@@ -19,6 +19,11 @@ export interface CompletionStats {
   this_week: number
 }
 
+export interface DueStats {
+  due_today: number
+  due_tomorrow: number
+}
+
 export interface TaskCreate {
   title: string
   estimate_size: EstimateSize

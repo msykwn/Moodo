@@ -54,18 +54,64 @@ body {
 }
 
 .mood-panel-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
   font-size: 0.72rem;
   font-weight: 600;
-  color: #7c3aed;
+  color: #9d8ec0;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+  white-space: nowrap;
 }
 
-.mood-panel-select,
+.mood-panel-select-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.mood-panel-select {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1.5px solid #ddd6fe;
+  border-radius: 20px;
+  padding: 6px 32px 6px 14px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: inherit;
+  background: #f5f3ff;
+  color: #7c3aed;
+  cursor: pointer;
+  outline: none;
+  box-shadow: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.mood-panel-select:hover {
+  background: #ede9fe;
+  border-color: #c4b5fd;
+}
+
+.mood-panel-select:focus {
+  border-color: #a78bfa;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+
+.mood-panel-select option {
+  background: #fff;
+  color: #1e1b2e;
+  font-weight: 500;
+}
+
+.mood-panel-chevron {
+  position: absolute;
+  right: 10px;
+  pointer-events: none;
+  font-size: 0.75rem;
+  color: #a78bfa;
+  line-height: 1;
+}
+
 .mood-panel-input {
+  width: 72px;
   border: 1.5px solid #c4b5fd;
   border-radius: 8px;
   padding: 5px 10px;
@@ -77,14 +123,9 @@ body {
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
-.mood-panel-select:focus,
 .mood-panel-input:focus {
   border-color: #7c3aed;
   box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
-}
-
-.mood-panel-input {
-  width: 72px;
 }
 
 .mood-panel-feedback {
@@ -311,6 +352,10 @@ main {
   color: #16a34a;
   font-weight: 700;
   font-size: 0.9rem;
+}
+
+.completion-stat.due-stat strong {
+  color: #d97706;
 }
 
 /* モーダル */

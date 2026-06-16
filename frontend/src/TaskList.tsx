@@ -127,8 +127,8 @@ export function TaskList({ refresh, onEdit, onComplete }: Props) {
   }, [refresh])
 
   const handleComplete = async (id: string, title: string) => {
-    setCompleteError(null)
     if (!window.confirm(`「${title}」を完了にしますか？`)) return
+    setCompleteError(null)
     try {
       await completeTask(id)
       setTasks((prev) => prev.filter((t) => t.id !== id))
