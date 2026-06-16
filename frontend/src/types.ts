@@ -13,6 +13,11 @@ export interface Task {
   description: string
 }
 
+export interface CompletionStats {
+  today: number
+  this_week: number
+}
+
 export interface TaskCreate {
   title: string
   estimate_size: EstimateSize
