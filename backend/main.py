@@ -95,7 +95,7 @@ def update_task(task_id: str, task_in: TaskCreate):
         tasks = _read_json(TASKS_FILE, [])
         for i, task in enumerate(tasks):
             if task["id"] == task_id:
-                updated = {"id": task_id, "score": task.get("score"), **task_in.model_dump()}
+                updated = {"id": task_id, "score": task.get("score"), "created_at": task.get("created_at"), **task_in.model_dump()}
                 tasks[i] = updated
                 _write_json(TASKS_FILE, tasks)
                 return updated

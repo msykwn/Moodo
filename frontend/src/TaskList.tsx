@@ -146,7 +146,7 @@ export function TaskList({ refresh, onEdit, onComplete }: Props) {
   const todayIds = new Set(todayTasks.map((t) => t.id))
 
   const buriedTasks = tasks
-    .filter((t) => !todayIds.has(t.id) && daysSinceCreated(t.created_at) >= BURIED_THRESHOLD_DAYS)
+    .filter((t) => !todayIds.has(t.id) && !isOverdue(t.due_date) && daysSinceCreated(t.created_at) >= BURIED_THRESHOLD_DAYS)
     .sort((a, b) => (a.created_at ?? "").localeCompare(b.created_at ?? ""))
 
   const pickupGroups: PickupGroup[] = [
@@ -174,6 +174,7 @@ export function TaskList({ refresh, onEdit, onComplete }: Props) {
 
 const PICKUP_PAGE_SIZE = 3
 const PICKUP_INTERVAL_MS = 4500
+const PICKUP_RESHOW_MS = 30000
 
 export function PickupSection({ groups, onEdit, onComplete }: PickupSectionProps) {
   // 全グループのページを連結したフラットなスロット列を作る
@@ -190,17 +191,39 @@ export function PickupSection({ groups, onEdit, onComplete }: PickupSectionProps
 
   const totalSlots = slots.length
   const [slotIndex, setSlotIndex] = useState(0)
+  const [visible, setVisible] = useState(true)
 
   useEffect(() => {
-    if (totalSlots <= 1) return
-    const timer = setInterval(() => {
-      setSlotIndex((i) => (i + 1) % totalSlots)
-    }, PICKUP_INTERVAL_MS)
-    return () => clearInterval(timer)
+    setSlotIndex(0)
+    setVisible(true)
   }, [totalSlots])
 
-  const safeSlotIndex = slotIndex % totalSlots
-  const current = slots[safeSlotIndex]
+  useEffect(() => {
+    if (!visible) {
+      const timer = setTimeout(() => {
+        setSlotIndex(0)
+        setVisible(true)
+      }, PICKUP_RESHOW_MS)
+      return () => clearTimeout(timer)
+    }
+
+    const timer = setInterval(() => {
+      setSlotIndex((i) => {
+        const next = i + 1
+        if (next >= totalSlots) {
+          setVisible(false)
+          return 0
+        }
+        return next
+      })
+    }, PICKUP_INTERVAL_MS)
+    return () => clearInterval(timer)
+  }, [visible, totalSlots])
+
+  if (!visible) return null
+
+  const current = slots[slotIndex] ?? slots[0]
+  if (!current) return null
 
   return (
     <div className="pickup-section">
@@ -211,7 +234,7 @@ export function PickupSection({ groups, onEdit, onComplete }: PickupSectionProps
             <span className="pickup-section-pager">{current.page} / {current.pageCount}</span>
           )}
         </h2>
-        <ul className="pickup-list" key={safeSlotIndex}>
+        <ul className="pickup-list" key={slotIndex}>
           {current.tasks.map((task) => (
             <TaskCard key={task.id} task={task} onEdit={onEdit} onComplete={onComplete} />
           ))}
