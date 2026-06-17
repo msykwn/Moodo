@@ -370,6 +370,7 @@ main {
   overflow-y: auto;
   backdrop-filter: blur(2px);
   transition: opacity 0.25s ease, backdrop-filter 0.25s ease;
+  z-index: 200;
 }
 
 .modal-backdrop--closing {
