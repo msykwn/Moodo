@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react"
-import type { BotherLevel, EditingTask, EstimateSize, Importance, TaskCreate } from "./types"
+import type { BotherLevel, EditingTask, EstimateSize, Importance, Task, TaskCreate } from "./types"
 import { createTask, updateTask, toggleTodayFlag, postponeTask } from "./api"
 import { todayLocalISO } from "./utils"
 
 interface Props {
   editingTask: EditingTask | null
+  initialValues?: Partial<TaskCreate>
   onClose: () => void
   onSaved: () => void
+  onSplit?: (savedValues: TaskCreate) => void
   onTodayFlagChanged?: () => void
   onPostponed?: () => void
 }
@@ -72,15 +74,15 @@ function ToggleGroup<T extends string>({
 }
 
 
-function buildInitialForm(editingTask: EditingTask): TaskCreate {
+function buildInitialForm(editingTask: EditingTask, initialValues?: Partial<TaskCreate>): TaskCreate {
   if ("__new" in editingTask) {
     return {
-      title: "",
-      estimate_size: "中",
-      bother_level: "まあまあ",
-      due_date: todayLocalISO(),
-      importance: "普通",
-      description: "",
+      title: initialValues?.title ?? "",
+      estimate_size: initialValues?.estimate_size ?? "中",
+      bother_level: initialValues?.bother_level ?? "まあまあ",
+      due_date: initialValues?.due_date ?? todayLocalISO(),
+      importance: initialValues?.importance ?? "普通",
+      description: initialValues?.description ?? "",
     }
   }
   return {
@@ -120,12 +122,13 @@ function formatDueDateForDisplay(isoDate: string): string {
   return `${parts[1]}${parts[2]}`
 }
 
-export function TaskModal({ editingTask, onClose, onSaved, onTodayFlagChanged, onPostponed }: Props) {
-  const initialForm = editingTask ? buildInitialForm(editingTask) : buildInitialForm({ __new: true })
+export function TaskModal({ editingTask, initialValues, onClose, onSaved, onSplit, onTodayFlagChanged, onPostponed }: Props) {
+  const initialForm = editingTask ? buildInitialForm(editingTask, initialValues) : buildInitialForm({ __new: true }, initialValues)
   const [form, setForm] = useState<TaskCreate>(initialForm)
   const [dueDateInput, setDueDateInput] = useState(() => {
-    const initial = editingTask && !("__new" in editingTask) ? editingTask.due_date : todayLocalISO()
-    return formatDueDateForDisplay(initial)
+    if (editingTask && !("__new" in editingTask)) return formatDueDateForDisplay(editingTask.due_date)
+    if (initialValues?.due_date) return formatDueDateForDisplay(initialValues.due_date)
+    return formatDueDateForDisplay(todayLocalISO())
   })
   const [dueDateError, setDueDateError] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -152,29 +155,33 @@ export function TaskModal({ editingTask, onClose, onSaved, onTodayFlagChanged, o
 
   const isNew = editingTask === null || "__new" in editingTask
 
+  const validateAndBuildSubmitData = useCallback((): TaskCreate | null => {
+    if (!formRef.current.title.trim()) {
+      setError("タイトルを入力してください")
+      return null
+    }
+    const parsed = parseDueDateInput(dueDateInputRef.current)
+    if (parsed === null) {
+      setDueDateError("MMDD形式で入力してください（例: 0614）")
+      return null
+    }
+    if (parsed === "") {
+      setDueDateError("期限を入力してください")
+      return null
+    }
+    setError(null)
+    setDueDateError(null)
+    return { ...formRef.current, due_date: parsed }
+  }, [])
+
   const handleSubmit = useCallback(async (e?: React.FormEvent) => {
     e?.preventDefault()
     if (submittingRef.current) return
 
-    if (!formRef.current.title.trim()) {
-      setError("タイトルを入力してください")
-      return
-    }
+    const submitData = validateAndBuildSubmitData()
+    if (!submitData) return
 
-    const parsed = parseDueDateInput(dueDateInputRef.current)
-    if (parsed === null) {
-      setDueDateError("MMDD形式で入力してください（例: 0614）")
-      return
-    }
-    if (parsed === "") {
-      setDueDateError("期限を入力してください")
-      return
-    }
-
-    setError(null)
-    setDueDateError(null)
     setSubmitting(true)
-    const submitData = { ...formRef.current, due_date: parsed }
     try {
       if (isNew || editingTask === null) {
         await createTask(submitData)
@@ -188,8 +195,24 @@ export function TaskModal({ editingTask, onClose, onSaved, onTodayFlagChanged, o
     } catch (err) {
       setError(err instanceof Error ? err.message : "保存に失敗しました")
     }
-    setSubmitting(false)
-  }, [isNew, editingTask, onSaved])
+  }, [validateAndBuildSubmitData, isNew, editingTask, onSaved])
+
+  const handleSplit = useCallback(async () => {
+    if (submittingRef.current || isNew || editingTask === null || !onSplit) return
+
+    const submitData = validateAndBuildSubmitData()
+    if (!submitData) return
+
+    setSubmitting(true)
+    try {
+      await updateTask((editingTask as Task).id, submitData)
+      onSplit(submitData)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "保存に失敗しました")
+    } finally {
+      setSubmitting(false)
+    }
+  }, [validateAndBuildSubmitData, isNew, editingTask, onSplit])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -346,6 +369,11 @@ export function TaskModal({ editingTask, onClose, onSaved, onTodayFlagChanged, o
             <button type="button" className="btn-cancel" onClick={closeWithFade}>
               キャンセル
             </button>
+            {!isNew && onSplit && (
+              <button type="button" className="btn-split" onClick={handleSplit} disabled={submitting}>
+                分割して追加
+              </button>
+            )}
             <button type="submit" className="btn-save" disabled={submitting}>
               {submitting ? "保存中..." : "保存"}
             </button>
