@@ -55,6 +55,16 @@ export async function saveMood(data: { mood: string }): Promise<void> {
   if (!res.ok) throw new Error(`Failed to save mood: ${res.status}`)
 }
 
+export async function toggleTodayFlag(id: string, flag: boolean): Promise<Task> {
+  const res = await fetch(`${BASE_URL}/tasks/${id}/today_flag`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ today_flag: flag }),
+  })
+  if (!res.ok) throw new Error(`Failed to update today_flag: ${res.status}`)
+  return res.json()
+}
+
 export async function fetchCompletionStats(signal?: AbortSignal): Promise<CompletionStats> {
   const res = await fetch(`${BASE_URL}/stats/completions`, { signal })
   if (!res.ok) throw new Error(`Failed to fetch completion stats: ${res.status}`)
