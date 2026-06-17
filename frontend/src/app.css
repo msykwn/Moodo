@@ -336,6 +336,28 @@ main {
   background: #f0fdf4;
 }
 
+.task-actions button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+@keyframes task-complete {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+}
+
+.task-card--completing {
+  animation: task-complete 0.4s ease-in forwards;
+  pointer-events: none;
+}
+
 /* 完了統計 */
 .completion-stats {
   display: flex;

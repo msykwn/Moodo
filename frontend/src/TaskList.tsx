@@ -18,7 +18,7 @@ export interface PickupGroup {
 export interface PickupSectionProps {
   groups: PickupGroup[]
   onEdit: (task: Task) => void
-  onComplete: (id: string, title: string) => void
+  onComplete: (id: string) => void
 }
 
 function parseDueDate(due_date: string): number {
@@ -66,9 +66,24 @@ function daysSinceCreated(createdAt: string | null): number {
 }
 
 
-function TaskCard({ task, onEdit, onComplete }: { task: Task; onEdit: (t: Task) => void; onComplete: (id: string, title: string) => void }) {
+const COMPLETE_ANIM_MS = 400
+
+function TaskCard({ task, onEdit, onComplete }: { task: Task; onEdit: (t: Task) => void; onComplete: (id: string) => void }) {
+  const [completing, setCompleting] = useState(false)
+
+  const handleComplete = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (completing) return
+    if (!window.confirm(`「${task.title}」を完了にしますか？`)) return
+    setCompleting(true)
+    setTimeout(() => onComplete(task.id), COMPLETE_ANIM_MS)
+  }
+
   return (
-    <li className={`task-card${isUrgent(task) ? " task-card--urgent" : ""}`} onClick={() => onEdit(task)}>
+    <li
+      className={`task-card${isUrgent(task) ? " task-card--urgent" : ""}${completing ? " task-card--completing" : ""}`}
+      onClick={() => onEdit(task)}
+    >
       <div className={scoreClass(task.score)}>{scoreLabel(task.score)}</div>
       <div className="task-body">
         <p className="task-title">
@@ -83,8 +98,8 @@ function TaskCard({ task, onEdit, onComplete }: { task: Task; onEdit: (t: Task) 
         </div>
       </div>
       <div className="task-actions">
-        <button onClick={(e) => { e.stopPropagation(); onEdit(task) }}>編集</button>
-        <button onClick={(e) => { e.stopPropagation(); onComplete(task.id, task.title) }}>完了</button>
+        <button disabled={completing} onClick={(e) => { e.stopPropagation(); onEdit(task) }}>編集</button>
+        <button disabled={completing} onClick={handleComplete}>完了</button>
       </div>
     </li>
   )
@@ -126,8 +141,7 @@ export function TaskList({ refresh, onEdit, onComplete }: Props) {
     return () => controller.abort()
   }, [refresh])
 
-  const handleComplete = async (id: string, title: string) => {
-    if (!window.confirm(`「${title}」を完了にしますか？`)) return
+  const handleComplete = async (id: string) => {
     setCompleteError(null)
     try {
       await completeTask(id)
