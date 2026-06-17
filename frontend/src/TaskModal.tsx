@@ -5,7 +5,7 @@ import { todayLocalISO } from "./utils"
 
 interface Props {
   editingTask: EditingTask | null
-  initialValues?: Partial<Task>
+  initialValues?: Partial<TaskCreate>
   onClose: () => void
   onSaved: () => void
   onSplit?: (savedValues: TaskCreate) => void
@@ -72,7 +72,7 @@ function ToggleGroup<T extends string>({
 }
 
 
-function buildInitialForm(editingTask: EditingTask, initialValues?: Partial<Task>): TaskCreate {
+function buildInitialForm(editingTask: EditingTask, initialValues?: Partial<TaskCreate>): TaskCreate {
   if ("__new" in editingTask) {
     return {
       title: initialValues?.title ?? "",
@@ -195,6 +195,7 @@ export function TaskModal({ editingTask, initialValues, onClose, onSaved, onSpli
       onSplit(submitData)
     } catch (err) {
       setError(err instanceof Error ? err.message : "保存に失敗しました")
+    } finally {
       setSubmitting(false)
     }
   }, [validateAndBuildSubmitData, isNew, editingTask, onSplit])
