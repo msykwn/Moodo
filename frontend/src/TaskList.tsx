@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import type { Task } from "./types"
-import { fetchTasks, completeTask, toggleTodayFlag } from "./api"
+import { fetchTasks, completeTask } from "./api"
 import { scoreClass, scoreLabel } from "./score"
 import { todayLocalISO } from "./utils"
 
@@ -19,7 +19,6 @@ export interface PickupSectionProps {
   groups: PickupGroup[]
   onEdit: (task: Task) => void
   onComplete: (id: string, title: string) => void
-  onTodayFlag: (id: string, flag: boolean) => void
 }
 
 function parseDueDate(due_date: string): number {
@@ -31,8 +30,6 @@ const importanceRank: Record<string, number> = { 低: 0, 普通: 1, 高: 2 }
 
 function sortTasks(tasks: Task[]): Task[] {
   return [...tasks].sort((a, b) => {
-    const todayDiff = ((b.today_flag ?? false) ? 1 : 0) - ((a.today_flag ?? false) ? 1 : 0)
-    if (todayDiff !== 0) return todayDiff
     const scoreDiff = (b.score ?? -1) - (a.score ?? -1)
     if (scoreDiff !== 0) return scoreDiff
     const dueDiff = parseDueDate(a.due_date) - parseDueDate(b.due_date)
@@ -81,13 +78,14 @@ function daysSinceCreated(createdAt: string | null): number {
 }
 
 
-function TaskCard({ task, onEdit, onComplete, onTodayFlag }: { task: Task; onEdit: (t: Task) => void; onComplete: (id: string, title: string) => void; onTodayFlag: (id: string, flag: boolean) => void }) {
+function TaskCard({ task, onEdit, onComplete }: { task: Task; onEdit: (t: Task) => void; onComplete: (id: string, title: string) => void }) {
   const flag = task.today_flag ?? false
   return (
     <li className={`task-card${isUrgent(task) ? " task-card--urgent" : ""}${flag ? " task-card--today" : ""}`} onClick={() => onEdit(task)}>
       <div className={scoreClass(task.score)}>{scoreLabel(task.score)}</div>
       <div className="task-body">
         <p className="task-title">
+          {flag && <span className="badge-today">★</span>}
           {task.title}
           {isUrgent(task) && <span className="badge-urgent">🔥</span>}
         </p>
@@ -99,13 +97,6 @@ function TaskCard({ task, onEdit, onComplete, onTodayFlag }: { task: Task; onEdi
         </div>
       </div>
       <div className="task-actions">
-        <button
-          className={`btn-today-flag${flag ? " btn-today-flag--on" : ""}`}
-          onClick={(e) => { e.stopPropagation(); onTodayFlag(task.id, !flag) }}
-          title={flag ? "今日やるフラグをOFF" : "今日やるフラグをON"}
-        >
-          {flag ? "★" : "☆"}
-        </button>
         <button onClick={(e) => { e.stopPropagation(); onEdit(task) }}>編集</button>
         <button onClick={(e) => { e.stopPropagation(); onComplete(task.id, task.title) }}>完了</button>
       </div>
@@ -141,18 +132,6 @@ export function TaskList({ refresh, onEdit, onComplete }: Props) {
     return () => controller.abort()
   }, [refresh])
 
-  const [todayFlagError, setTodayFlagError] = useState<string | null>(null)
-
-  const handleTodayFlag = async (id: string, flag: boolean) => {
-    setTodayFlagError(null)
-    try {
-      const updated = await toggleTodayFlag(id, flag)
-      setTasks((prev) => sortTasks(prev.map((t) => t.id === id ? updated : t)))
-    } catch (e) {
-      setTodayFlagError(e instanceof Error ? e.message : "フラグを更新できませんでした")
-    }
-  }
-
   const handleComplete = async (id: string, title: string) => {
     if (!window.confirm(`「${title}」を完了にしますか？`)) return
     setCompleteError(null)
@@ -186,14 +165,13 @@ export function TaskList({ refresh, onEdit, onComplete }: Props) {
   return (
     <>
       {completeError && <p className="status-message error">{completeError}</p>}
-      {todayFlagError && <p className="status-message error">{todayFlagError}</p>}
       <ul className="task-list">
         {mainTasks.map((task) => (
-          <TaskCard key={task.id} task={task} onEdit={onEdit} onComplete={handleComplete} onTodayFlag={handleTodayFlag} />
+          <TaskCard key={task.id} task={task} onEdit={onEdit} onComplete={handleComplete} />
         ))}
       </ul>
       {pickupGroups.length > 0 && (
-        <PickupSection groups={pickupGroups} onEdit={onEdit} onComplete={handleComplete} onTodayFlag={handleTodayFlag} />
+        <PickupSection groups={pickupGroups} onEdit={onEdit} onComplete={handleComplete} />
       )}
     </>
   )
@@ -203,7 +181,7 @@ const PICKUP_PAGE_SIZE = 3
 const PICKUP_INTERVAL_MS = 4500
 const PICKUP_RESHOW_MS = 30000
 
-export function PickupSection({ groups, onEdit, onComplete, onTodayFlag }: PickupSectionProps) {
+export function PickupSection({ groups, onEdit, onComplete }: PickupSectionProps) {
   // 全グループのページを連結したフラットなスロット列を作る
   // 例: 今日期限2件 → 1ページ、積みタスク5件 → 2ページ → 計3スロット
   const slots = groups.flatMap((group) => {
@@ -263,7 +241,7 @@ export function PickupSection({ groups, onEdit, onComplete, onTodayFlag }: Picku
         </h2>
         <ul className="pickup-list" key={slotIndex}>
           {current.tasks.map((task) => (
-            <TaskCard key={task.id} task={task} onEdit={onEdit} onComplete={onComplete} onTodayFlag={onTodayFlag} />
+            <TaskCard key={task.id} task={task} onEdit={onEdit} onComplete={onComplete} />
           ))}
         </ul>
       </div>
