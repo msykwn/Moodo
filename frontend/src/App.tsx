@@ -44,7 +44,6 @@ function App() {
   }, [editingTask, openNewTaskModal])
 
   const handleTaskSaved = () => {
-    setEditingTask(null)
     setRefresh((n) => n + 1)
   }
 
@@ -68,6 +67,7 @@ function App() {
         editingTask={editingTask}
         onClose={() => setEditingTask(null)}
         onSaved={handleTaskSaved}
+        onTodayFlagChanged={() => setRefresh((n) => n + 1)}
       />
     </div>
   )

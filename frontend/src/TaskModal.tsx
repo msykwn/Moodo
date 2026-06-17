@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import type { BotherLevel, EditingTask, EstimateSize, Importance, TaskCreate } from "./types"
-import { createTask, updateTask } from "./api"
+import { createTask, updateTask, toggleTodayFlag } from "./api"
 import { todayLocalISO } from "./utils"
 
 interface Props {
   editingTask: EditingTask | null
   onClose: () => void
   onSaved: () => void
+  onTodayFlagChanged?: () => void
 }
 
 const BOTHER_LEVELS: BotherLevel[] = ["チョロ", "まあまあ", "重い"]
@@ -118,7 +119,7 @@ function formatDueDateForDisplay(isoDate: string): string {
   return `${parts[1]}${parts[2]}`
 }
 
-export function TaskModal({ editingTask, onClose, onSaved }: Props) {
+export function TaskModal({ editingTask, onClose, onSaved, onTodayFlagChanged }: Props) {
   const initialForm = editingTask ? buildInitialForm(editingTask) : buildInitialForm({ __new: true })
   const [form, setForm] = useState<TaskCreate>(initialForm)
   const [dueDateInput, setDueDateInput] = useState(() => {
@@ -128,7 +129,17 @@ export function TaskModal({ editingTask, onClose, onSaved }: Props) {
   const [dueDateError, setDueDateError] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [todayFlag, setTodayFlag] = useState(() =>
+    editingTask && !("__new" in editingTask) ? (editingTask.today_flag ?? false) : false
+  )
+  const [todayFlagUpdating, setTodayFlagUpdating] = useState(false)
+  const [closing, setClosing] = useState(false)
   const dateInputRef = useRef<HTMLInputElement>(null)
+
+  const closeWithFade = () => {
+    setClosing(true)
+    setTimeout(onClose, 250)
+  }
 
   const formRef = useRef(form)
   formRef.current = form
@@ -169,11 +180,13 @@ export function TaskModal({ editingTask, onClose, onSaved }: Props) {
         await updateTask(editingTask.id, submitData)
       }
       onSaved()
+      setClosing(true)
+      setTimeout(onClose, 250)
+      return
     } catch (err) {
       setError(err instanceof Error ? err.message : "保存に失敗しました")
-    } finally {
-      setSubmitting(false)
     }
+    setSubmitting(false)
   }, [isNew, editingTask, onSaved])
 
   useEffect(() => {
@@ -202,9 +215,35 @@ export function TaskModal({ editingTask, onClose, onSaved }: Props) {
   }
 
   return (
-    <div className="modal-backdrop" onClick={submitting ? undefined : onClose}>
+    <div className={`modal-backdrop${closing ? " modal-backdrop--closing" : ""}`} onClick={submitting ? undefined : closeWithFade}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h2 className="modal-title">{isNew ? "タスクを追加" : "タスクを編集"}</h2>
+        <div className="modal-header">
+          <h2 className="modal-title">{isNew ? "タスクを追加" : "タスクを編集"}</h2>
+          {!isNew && editingTask && !("__new" in editingTask) && (
+            <button
+              type="button"
+              className={`btn-today-flag-modal${todayFlag ? " btn-today-flag-modal--on" : ""}`}
+              disabled={todayFlagUpdating}
+              onClick={async () => {
+                setTodayFlagUpdating(true)
+                try {
+                  await toggleTodayFlag(editingTask.id, !todayFlag)
+                  setClosing(true)
+                  setTimeout(() => {
+                    onTodayFlagChanged?.()
+                    onClose()
+                  }, 250)
+                } catch {
+                  setError("フラグの更新に失敗しました")
+                } finally {
+                  setTodayFlagUpdating(false)
+                }
+              }}
+            >
+              {todayFlag ? "★ Moodo" : "☆ Moodo"}
+            </button>
+          )}
+        </div>
         <form className="modal-form" onSubmit={handleSubmit}>
           <label>
             タイトル
@@ -278,7 +317,7 @@ export function TaskModal({ editingTask, onClose, onSaved }: Props) {
           </label>
           {error && <p className="modal-error">{error}</p>}
           <div className="modal-actions">
-            <button type="button" className="btn-cancel" onClick={onClose}>
+            <button type="button" className="btn-cancel" onClick={closeWithFade}>
               キャンセル
             </button>
             <button type="submit" className="btn-save" disabled={submitting}>
