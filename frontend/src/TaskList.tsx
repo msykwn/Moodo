@@ -141,6 +141,7 @@ export function TaskList({ refresh, onEdit, onComplete }: Props) {
   }
 
   const handlePostpone = async (id: string) => {
+    setCompleteError(null)
     try {
       const updated = await postponeTask(id)
       setTasks((prev) => prev.map((t) => t.id === id ? { ...t, due_date: updated.due_date } : t))
