@@ -336,6 +336,16 @@ main {
   background: #f0fdf4;
 }
 
+.task-actions .btn-postpone {
+  color: #d97706;
+  border-color: #fde68a;
+}
+
+.task-actions .btn-postpone:hover {
+  border-color: #d97706;
+  background: #fffbeb;
+}
+
 /* 完了統計 */
 .completion-stats {
   display: flex;

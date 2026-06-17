@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import type { Task } from "./types"
-import { fetchTasks, completeTask } from "./api"
+import { fetchTasks, completeTask, postponeTask } from "./api"
 import { scoreClass, scoreLabel } from "./score"
 import { todayLocalISO } from "./utils"
 
@@ -19,6 +19,7 @@ export interface PickupSectionProps {
   groups: PickupGroup[]
   onEdit: (task: Task) => void
   onComplete: (id: string, title: string) => void
+  onPostpone: (id: string) => void
 }
 
 function parseDueDate(due_date: string): number {
@@ -66,7 +67,7 @@ function daysSinceCreated(createdAt: string | null): number {
 }
 
 
-function TaskCard({ task, onEdit, onComplete }: { task: Task; onEdit: (t: Task) => void; onComplete: (id: string, title: string) => void }) {
+function TaskCard({ task, onEdit, onComplete, onPostpone }: { task: Task; onEdit: (t: Task) => void; onComplete: (id: string, title: string) => void; onPostpone: (id: string) => void }) {
   return (
     <li className={`task-card${isUrgent(task) ? " task-card--urgent" : ""}`} onClick={() => onEdit(task)}>
       <div className={scoreClass(task.score)}>{scoreLabel(task.score)}</div>
@@ -84,6 +85,7 @@ function TaskCard({ task, onEdit, onComplete }: { task: Task; onEdit: (t: Task) 
       </div>
       <div className="task-actions">
         <button onClick={(e) => { e.stopPropagation(); onEdit(task) }}>編集</button>
+        <button className="btn-postpone" onClick={(e) => { e.stopPropagation(); onPostpone(task.id) }}>先送り</button>
         <button onClick={(e) => { e.stopPropagation(); onComplete(task.id, task.title) }}>完了</button>
       </div>
     </li>
@@ -138,6 +140,15 @@ export function TaskList({ refresh, onEdit, onComplete }: Props) {
     }
   }
 
+  const handlePostpone = async (id: string) => {
+    try {
+      const updated = await postponeTask(id)
+      setTasks((prev) => prev.map((t) => t.id === id ? { ...t, due_date: updated.due_date } : t))
+    } catch (e) {
+      setCompleteError(e instanceof Error ? e.message : "先送りできませんでした")
+    }
+  }
+
   if (loading) return <p className="status-message">読み込み中...</p>
   if (error) return <p className="status-message error">{error}</p>
   if (tasks.length === 0) return <p className="status-message">タスクがありません。追加してみましょう！</p>
@@ -161,11 +172,11 @@ export function TaskList({ refresh, onEdit, onComplete }: Props) {
       {completeError && <p className="status-message error">{completeError}</p>}
       <ul className="task-list">
         {mainTasks.map((task) => (
-          <TaskCard key={task.id} task={task} onEdit={onEdit} onComplete={handleComplete} />
+          <TaskCard key={task.id} task={task} onEdit={onEdit} onComplete={handleComplete} onPostpone={handlePostpone} />
         ))}
       </ul>
       {pickupGroups.length > 0 && (
-        <PickupSection groups={pickupGroups} onEdit={onEdit} onComplete={handleComplete} />
+        <PickupSection groups={pickupGroups} onEdit={onEdit} onComplete={handleComplete} onPostpone={handlePostpone} />
       )}
     </>
   )
@@ -175,7 +186,7 @@ const PICKUP_PAGE_SIZE = 3
 const PICKUP_INTERVAL_MS = 4500
 const PICKUP_RESHOW_MS = 30000
 
-export function PickupSection({ groups, onEdit, onComplete }: PickupSectionProps) {
+export function PickupSection({ groups, onEdit, onComplete, onPostpone }: PickupSectionProps) {
   // 全グループのページを連結したフラットなスロット列を作る
   // 例: 今日期限2件 → 1ページ、積みタスク5件 → 2ページ → 計3スロット
   const slots = groups.flatMap((group) => {
@@ -235,7 +246,7 @@ export function PickupSection({ groups, onEdit, onComplete }: PickupSectionProps
         </h2>
         <ul className="pickup-list" key={slotIndex}>
           {current.tasks.map((task) => (
-            <TaskCard key={task.id} task={task} onEdit={onEdit} onComplete={onComplete} />
+            <TaskCard key={task.id} task={task} onEdit={onEdit} onComplete={onComplete} onPostpone={onPostpone} />
           ))}
         </ul>
       </div>
