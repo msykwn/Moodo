@@ -12,6 +12,7 @@ export interface Task {
   score: number | null
   description: string
   created_at: string | null
+  today_flag: boolean
 }
 
 export interface CompletionStats {

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import type { BotherLevel, EditingTask, EstimateSize, Importance, Task, TaskCreate } from "./types"
-import { createTask, updateTask } from "./api"
+import { createTask, updateTask, toggleTodayFlag, postponeTask } from "./api"
 import { todayLocalISO } from "./utils"
 
 interface Props {
@@ -9,6 +9,8 @@ interface Props {
   onClose: () => void
   onSaved: () => void
   onSplit?: (savedValues: TaskCreate) => void
+  onTodayFlagChanged?: () => void
+  onPostponed?: () => void
 }
 
 const BOTHER_LEVELS: BotherLevel[] = ["チョロ", "まあまあ", "重い"]
@@ -120,7 +122,7 @@ function formatDueDateForDisplay(isoDate: string): string {
   return `${parts[1]}${parts[2]}`
 }
 
-export function TaskModal({ editingTask, initialValues, onClose, onSaved, onSplit }: Props) {
+export function TaskModal({ editingTask, initialValues, onClose, onSaved, onSplit, onTodayFlagChanged, onPostponed }: Props) {
   const initialForm = editingTask ? buildInitialForm(editingTask, initialValues) : buildInitialForm({ __new: true }, initialValues)
   const [form, setForm] = useState<TaskCreate>(initialForm)
   const [dueDateInput, setDueDateInput] = useState(() => {
@@ -131,7 +133,18 @@ export function TaskModal({ editingTask, initialValues, onClose, onSaved, onSpli
   const [dueDateError, setDueDateError] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [todayFlag, setTodayFlag] = useState(() =>
+    editingTask && !("__new" in editingTask) ? (editingTask.today_flag ?? false) : false
+  )
+  const [todayFlagUpdating, setTodayFlagUpdating] = useState(false)
+  const [postponing, setPostponing] = useState(false)
+  const [closing, setClosing] = useState(false)
   const dateInputRef = useRef<HTMLInputElement>(null)
+
+  const closeWithFade = () => {
+    setClosing(true)
+    setTimeout(onClose, 250)
+  }
 
   const formRef = useRef(form)
   formRef.current = form
@@ -176,10 +189,11 @@ export function TaskModal({ editingTask, initialValues, onClose, onSaved, onSpli
         await updateTask(editingTask.id, submitData)
       }
       onSaved()
+      setClosing(true)
+      setTimeout(onClose, 250)
+      return
     } catch (err) {
       setError(err instanceof Error ? err.message : "保存に失敗しました")
-    } finally {
-      setSubmitting(false)
     }
   }, [validateAndBuildSubmitData, isNew, editingTask, onSaved])
 
@@ -226,9 +240,59 @@ export function TaskModal({ editingTask, initialValues, onClose, onSaved, onSpli
   }
 
   return (
-    <div className="modal-backdrop" onClick={submitting ? undefined : onClose}>
+    <div className={`modal-backdrop${closing ? " modal-backdrop--closing" : ""}`} onClick={submitting ? undefined : closeWithFade}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h2 className="modal-title">{isNew ? "タスクを追加" : "タスクを編集"}</h2>
+        <div className="modal-header">
+          <h2 className="modal-title">{isNew ? "タスクを追加" : "タスクを編集"}</h2>
+          {!isNew && editingTask && !("__new" in editingTask) && (
+            <div className="modal-header-actions">
+              <button
+                type="button"
+                className="btn-postpone-modal"
+                disabled={postponing}
+                onClick={async () => {
+                  setPostponing(true)
+                  try {
+                    await postponeTask(editingTask.id)
+                    setClosing(true)
+                    setTimeout(() => {
+                      onPostponed?.()
+                      onClose()
+                    }, 250)
+                  } catch {
+                    setError("先送りに失敗しました")
+                  } finally {
+                    setPostponing(false)
+                  }
+                }}
+              >
+                先送り
+              </button>
+              <button
+                type="button"
+                className={`btn-today-flag-modal${todayFlag ? " btn-today-flag-modal--on" : ""}`}
+                disabled={todayFlagUpdating}
+                onClick={async () => {
+                  setTodayFlagUpdating(true)
+                  try {
+                    await toggleTodayFlag(editingTask.id, !todayFlag)
+                    setClosing(true)
+                    setTimeout(() => {
+                      onTodayFlagChanged?.()
+                      onClose()
+                    }, 250)
+                  } catch {
+                    setError("フラグの更新に失敗しました")
+                  } finally {
+                    setTodayFlagUpdating(false)
+                  }
+                }}
+              >
+                {todayFlag ? "★ Moodo" : "☆ Moodo"}
+              </button>
+            </div>
+          )}
+        </div>
         <form className="modal-form" onSubmit={handleSubmit}>
           <label>
             タイトル
@@ -302,7 +366,7 @@ export function TaskModal({ editingTask, initialValues, onClose, onSaved, onSpli
           </label>
           {error && <p className="modal-error">{error}</p>}
           <div className="modal-actions">
-            <button type="button" className="btn-cancel" onClick={onClose}>
+            <button type="button" className="btn-cancel" onClick={closeWithFade}>
               キャンセル
             </button>
             {!isNew && onSplit && (
