@@ -28,7 +28,8 @@ app.add_middleware(
 TASKS_FILE = Path(__file__).parent / "tasks.json"
 COMPLETED_TASKS_FILE = Path(__file__).parent / "completed_tasks.json"
 MOOD_FILE = Path(__file__).parent / "mood.json"
-SCORE_PROMPT_FILE = Path(__file__).parent.parent / "score-prompt.md"
+PROJECT_ROOT = Path(__file__).parent.parent
+SCORE_PROMPT_FILE = PROJECT_ROOT / "score-prompt.md"
 
 
 class TaskCreate(BaseModel):
@@ -291,6 +292,7 @@ def run_scoring():
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
+                cwd=str(PROJECT_ROOT),
             )
             try:
                 _, stderr = proc.communicate(timeout=120)
