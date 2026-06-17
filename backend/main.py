@@ -1,5 +1,6 @@
 import json
 import os
+import subprocess
 import tempfile
 import threading
 import uuid
@@ -12,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 _file_lock = threading.Lock()
+_scoring_lock = threading.Lock()
 
 app = FastAPI()
 
@@ -26,6 +28,8 @@ app.add_middleware(
 TASKS_FILE = Path(__file__).parent / "tasks.json"
 COMPLETED_TASKS_FILE = Path(__file__).parent / "completed_tasks.json"
 MOOD_FILE = Path(__file__).parent / "mood.json"
+PROJECT_ROOT = Path(__file__).parent.parent
+SCORE_PROMPT_FILE = PROJECT_ROOT / "score-prompt.md"
 
 
 class TaskCreate(BaseModel):
@@ -270,6 +274,41 @@ def delete_task(task_id: str):
         if len(new_tasks) == len(tasks):
             raise HTTPException(status_code=404, detail="Task not found")
         _write_json(TASKS_FILE, new_tasks)
+
+
+@app.post("/tasks/score/run")
+def run_scoring():
+    if not _scoring_lock.acquire(blocking=False):
+        raise HTTPException(status_code=409, detail="スコアリングが既に実行中です")
+    try:
+        if not SCORE_PROMPT_FILE.exists():
+            raise HTTPException(status_code=500, detail=f"score-prompt.md が見つかりません: {SCORE_PROMPT_FILE}")
+
+        prompt = SCORE_PROMPT_FILE.read_text(encoding="utf-8")
+
+        try:
+            proc = subprocess.Popen(
+                ["claude", "-p", prompt, "--permission-mode", "acceptEdits"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                cwd=str(PROJECT_ROOT),
+            )
+            try:
+                _, stderr = proc.communicate(timeout=120)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.communicate()
+                raise HTTPException(status_code=504, detail="スコアリングがタイムアウトしました")
+        except FileNotFoundError:
+            raise HTTPException(status_code=500, detail="claude コマンドが見つかりません")
+
+        if proc.returncode != 0:
+            raise HTTPException(status_code=500, detail=f"claude コマンドがエラーで終了しました: {stderr[:200]}")
+
+        return {"ok": True}
+    finally:
+        _scoring_lock.release()
 
 
 @app.get("/mood")

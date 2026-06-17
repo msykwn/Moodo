@@ -77,3 +77,11 @@ export async function fetchDueStats(signal?: AbortSignal): Promise<DueStats> {
   return res.json()
 }
 
+export async function runScoring(): Promise<void> {
+  const res = await fetch(`${BASE_URL}/tasks/score/run`, { method: "POST" })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body.detail ?? `スコアリングに失敗しました: ${res.status}`)
+  }
+}
+

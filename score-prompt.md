@@ -2,8 +2,8 @@
 
 ## ファイル
 
-- `/Users/piyo/repository/Moodo/backend/tasks.json` … タスク一覧。各タスクの title・期限（due_date）・作業見積もり（estimate_size: 小/中/大）・めんどくさレベル（bother_level）・重要度（importance）・詳細（description）を持つ
-- `/Users/piyo/repository/Moodo/backend/mood.json` … 現在の気分（mood）
+- `backend/tasks.json` … タスク一覧。各タスクの title・期限（due_date）・作業見積もり（estimate_size: 小/中/大）・めんどくさレベル（bother_level）・重要度（importance）・詳細（description）を持つ
+- `backend/mood.json` … 現在の気分（mood）
 
 ## スコアリングの考え方
 
