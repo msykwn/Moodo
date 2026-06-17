@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react"
+import confetti from "canvas-confetti"
 import type { Task } from "./types"
 import { fetchTasks, completeTask } from "./api"
 import { scoreClass, scoreLabel } from "./score"
@@ -83,6 +84,7 @@ function TaskCard({ task, onEdit, onComplete }: { task: Task; onEdit: (t: Task) 
     if (completing) return
     if (!window.confirm(`「${task.title}」を完了にしますか？`)) return
     setCompleting(true)
+    confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } })
     timerRef.current = setTimeout(() => {
       onComplete(task.id).catch(() => setCompleting(false))
     }, COMPLETE_ANIM_MS)
