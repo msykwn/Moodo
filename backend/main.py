@@ -41,10 +41,14 @@ class Task(TaskCreate):
     id: str
     score: float | None = None
     created_at: str | None = None
+    today_flag: bool = False
 
 
 class CompletedTask(Task):
     completed_date: str
+    completed_mood: str | None = None
+    days_to_complete: int | None = None
+    due_diff_days: int | None = None
 
 
 class Mood(BaseModel):
@@ -95,7 +99,7 @@ def update_task(task_id: str, task_in: TaskCreate):
         tasks = _read_json(TASKS_FILE, [])
         for i, task in enumerate(tasks):
             if task["id"] == task_id:
-                updated = {"id": task_id, "score": task.get("score"), "created_at": task.get("created_at"), **task_in.model_dump()}
+                updated = {"id": task_id, "score": task.get("score"), "created_at": task.get("created_at"), "today_flag": task.get("today_flag", False), **task_in.model_dump()}
                 tasks[i] = updated
                 _write_json(TASKS_FILE, tasks)
                 return updated
@@ -114,6 +118,22 @@ def update_score(task_id: str, score: float | None = Query(default=None, ge=0, l
     raise HTTPException(status_code=404, detail="Task not found")
 
 
+class TodayFlagUpdate(BaseModel):
+    today_flag: bool
+
+
+@app.patch("/tasks/{task_id}/today_flag", response_model=Task)
+def update_today_flag(task_id: str, body: TodayFlagUpdate):
+    with _file_lock:
+        tasks = _read_json(TASKS_FILE, [])
+        for i, task in enumerate(tasks):
+            if task["id"] == task_id:
+                tasks[i]["today_flag"] = body.today_flag
+                _write_json(TASKS_FILE, tasks)
+                return tasks[i]
+    raise HTTPException(status_code=404, detail="Task not found")
+
+
 @app.patch("/tasks/{task_id}/complete", response_model=CompletedTask)
 def complete_task(task_id: str):
     with _file_lock:
@@ -121,7 +141,43 @@ def complete_task(task_id: str):
         completed_tasks = _read_json(COMPLETED_TASKS_FILE, [])
         for i, task in enumerate(tasks):
             if task["id"] == task_id:
-                completed = {**task, "completed_date": date.today().isoformat()}
+                completed_date = date.today().isoformat()
+
+                # completed_mood: mood.json から取得。失敗時は None
+                completed_mood: str | None = None
+                try:
+                    if MOOD_FILE.exists():
+                        with MOOD_FILE.open("r", encoding="utf-8") as f:
+                            mood_data = json.load(f)
+                        completed_mood = mood_data.get("mood")
+                except Exception:
+                    pass
+
+                # days_to_complete: 作成日からの経過日数。created_at が null の場合は None
+                days_to_complete: int | None = None
+                try:
+                    created_at = task.get("created_at")
+                    if created_at:
+                        days_to_complete = (date.fromisoformat(completed_date) - date.fromisoformat(created_at)).days
+                except Exception:
+                    pass
+
+                # due_diff_days: 完了日 - 期限日。プラス=遅延、マイナス=早期完了。due_date が null の場合は None
+                due_diff_days: int | None = None
+                try:
+                    due_date = task.get("due_date")
+                    if due_date:
+                        due_diff_days = (date.fromisoformat(completed_date) - date.fromisoformat(due_date)).days
+                except Exception:
+                    pass
+
+                completed = {
+                    **task,
+                    "completed_date": completed_date,
+                    "completed_mood": completed_mood,
+                    "days_to_complete": days_to_complete,
+                    "due_diff_days": due_diff_days,
+                }
                 tasks.pop(i)
                 completed_tasks.append(completed)
                 _write_json(TASKS_FILE, tasks)
@@ -188,6 +244,22 @@ def get_due_stats():
             due_tomorrow += 1
 
     return {"due_today": due_today, "due_tomorrow": due_tomorrow}
+
+
+@app.patch("/tasks/{task_id}/postpone", response_model=Task)
+def postpone_task(task_id: str):
+    with _file_lock:
+        tasks = _read_json(TASKS_FILE, [])
+        for i, task in enumerate(tasks):
+            if task["id"] == task_id:
+                due = task.get("due_date")
+                if not due:
+                    raise HTTPException(status_code=400, detail="due_date is not set")
+                new_due = (date.fromisoformat(due) + timedelta(days=1)).isoformat()
+                tasks[i]["due_date"] = new_due
+                _write_json(TASKS_FILE, tasks)
+                return tasks[i]
+    raise HTTPException(status_code=404, detail="Task not found")
 
 
 @app.delete("/tasks/{task_id}", status_code=204)

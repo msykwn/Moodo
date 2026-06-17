@@ -27,6 +27,18 @@ function parseDueDate(due_date: string): number {
   return isNaN(t) ? Infinity : t
 }
 
+const importanceRank: Record<string, number> = { 低: 0, 普通: 1, 高: 2 }
+
+function sortTasks(tasks: Task[]): Task[] {
+  return [...tasks].sort((a, b) => {
+    const scoreDiff = (b.score ?? -1) - (a.score ?? -1)
+    if (scoreDiff !== 0) return scoreDiff
+    const dueDiff = parseDueDate(a.due_date) - parseDueDate(b.due_date)
+    if (dueDiff !== 0) return dueDiff
+    return (importanceRank[b.importance] ?? -Infinity) - (importanceRank[a.importance] ?? -Infinity)
+  })
+}
+
 
 function isUrgent(task: Task): boolean {
   return task.due_date === todayLocalISO() && task.importance === "高"
@@ -72,6 +84,7 @@ const COMPLETE_ANIM_MS = 400
 function TaskCard({ task, onEdit, onComplete }: { task: Task; onEdit: (t: Task) => void; onComplete: (id: string) => Promise<void> }) {
   const [completing, setCompleting] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const flag = task.today_flag ?? false
 
   useEffect(() => {
     return () => {
@@ -92,12 +105,13 @@ function TaskCard({ task, onEdit, onComplete }: { task: Task; onEdit: (t: Task) 
 
   return (
     <li
-      className={`task-card${isUrgent(task) ? " task-card--urgent" : ""}${completing ? " task-card--completing" : ""}`}
+      className={`task-card${isUrgent(task) ? " task-card--urgent" : ""}${flag ? " task-card--today" : ""}${completing ? " task-card--completing" : ""}`}
       onClick={() => onEdit(task)}
     >
       <div className={scoreClass(task.score)}>{scoreLabel(task.score)}</div>
       <div className="task-body">
         <p className="task-title">
+          {flag && <span className="badge-today">★</span>}
           {task.title}
           {isUrgent(task) && <span className="badge-urgent">🔥</span>}
         </p>
@@ -131,15 +145,7 @@ export function TaskList({ refresh, onEdit, onComplete }: Props) {
     setLoading(true)
     fetchTasks(controller.signal)
       .then((data) => {
-        const importanceRank: Record<string, number> = { 低: 0, 普通: 1, 高: 2 }
-        const sorted = [...data].sort((a, b) => {
-          const scoreDiff = (b.score ?? -1) - (a.score ?? -1)
-          if (scoreDiff !== 0) return scoreDiff
-          const dueDiff = parseDueDate(a.due_date) - parseDueDate(b.due_date)
-          if (dueDiff !== 0) return dueDiff
-          return (importanceRank[b.importance] ?? -Infinity) - (importanceRank[a.importance] ?? -Infinity)
-        })
-        setTasks(sorted)
+        setTasks(sortTasks(data))
         setError(null)
       })
       .catch((e) => {
