@@ -68,6 +68,7 @@ function App() {
         onClose={() => setEditingTask(null)}
         onSaved={handleTaskSaved}
         onTodayFlagChanged={() => setRefresh((n) => n + 1)}
+        onPostponed={() => setRefresh((n) => n + 1)}
       />
     </div>
   )

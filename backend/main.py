@@ -246,6 +246,22 @@ def get_due_stats():
     return {"due_today": due_today, "due_tomorrow": due_tomorrow}
 
 
+@app.patch("/tasks/{task_id}/postpone", response_model=Task)
+def postpone_task(task_id: str):
+    with _file_lock:
+        tasks = _read_json(TASKS_FILE, [])
+        for i, task in enumerate(tasks):
+            if task["id"] == task_id:
+                due = task.get("due_date")
+                if not due:
+                    raise HTTPException(status_code=400, detail="due_date is not set")
+                new_due = (date.fromisoformat(due) + timedelta(days=1)).isoformat()
+                tasks[i]["due_date"] = new_due
+                _write_json(TASKS_FILE, tasks)
+                return tasks[i]
+    raise HTTPException(status_code=404, detail="Task not found")
+
+
 @app.delete("/tasks/{task_id}", status_code=204)
 def delete_task(task_id: str):
     with _file_lock:

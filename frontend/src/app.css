@@ -336,6 +336,16 @@ main {
   background: #f0fdf4;
 }
 
+.task-actions .btn-postpone {
+  color: #d97706;
+  border-color: #fde68a;
+}
+
+.task-actions .btn-postpone:hover {
+  border-color: #d97706;
+  background: #fffbeb;
+}
+
 /* 完了統計 */
 .completion-stats {
   display: flex;
@@ -398,6 +408,12 @@ main {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.modal-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .modal-title {
@@ -705,6 +721,31 @@ main {
   font-size: 0.85rem;
   margin-right: 0;
   color: #d97706;
+}
+
+.btn-postpone-modal {
+  flex-shrink: 0;
+  background: none;
+  border: 1.5px solid #ddd6fe;
+  border-radius: 20px;
+  padding: 4px 12px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-family: inherit;
+  color: #a78bfa;
+  font-weight: 600;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.btn-postpone-modal:hover {
+  border-color: #a78bfa;
+  background: #f5f3ff;
+}
+
+.btn-postpone-modal:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .btn-today-flag-modal {

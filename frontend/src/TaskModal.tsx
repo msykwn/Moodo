@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import type { BotherLevel, EditingTask, EstimateSize, Importance, TaskCreate } from "./types"
-import { createTask, updateTask, toggleTodayFlag } from "./api"
+import { createTask, updateTask, toggleTodayFlag, postponeTask } from "./api"
 import { todayLocalISO } from "./utils"
 
 interface Props {
@@ -8,6 +8,7 @@ interface Props {
   onClose: () => void
   onSaved: () => void
   onTodayFlagChanged?: () => void
+  onPostponed?: () => void
 }
 
 const BOTHER_LEVELS: BotherLevel[] = ["チョロ", "まあまあ", "重い"]
@@ -119,7 +120,7 @@ function formatDueDateForDisplay(isoDate: string): string {
   return `${parts[1]}${parts[2]}`
 }
 
-export function TaskModal({ editingTask, onClose, onSaved, onTodayFlagChanged }: Props) {
+export function TaskModal({ editingTask, onClose, onSaved, onTodayFlagChanged, onPostponed }: Props) {
   const initialForm = editingTask ? buildInitialForm(editingTask) : buildInitialForm({ __new: true })
   const [form, setForm] = useState<TaskCreate>(initialForm)
   const [dueDateInput, setDueDateInput] = useState(() => {
@@ -133,6 +134,7 @@ export function TaskModal({ editingTask, onClose, onSaved, onTodayFlagChanged }:
     editingTask && !("__new" in editingTask) ? (editingTask.today_flag ?? false) : false
   )
   const [todayFlagUpdating, setTodayFlagUpdating] = useState(false)
+  const [postponing, setPostponing] = useState(false)
   const [closing, setClosing] = useState(false)
   const dateInputRef = useRef<HTMLInputElement>(null)
 
@@ -220,28 +222,52 @@ export function TaskModal({ editingTask, onClose, onSaved, onTodayFlagChanged }:
         <div className="modal-header">
           <h2 className="modal-title">{isNew ? "タスクを追加" : "タスクを編集"}</h2>
           {!isNew && editingTask && !("__new" in editingTask) && (
-            <button
-              type="button"
-              className={`btn-today-flag-modal${todayFlag ? " btn-today-flag-modal--on" : ""}`}
-              disabled={todayFlagUpdating}
-              onClick={async () => {
-                setTodayFlagUpdating(true)
-                try {
-                  await toggleTodayFlag(editingTask.id, !todayFlag)
-                  setClosing(true)
-                  setTimeout(() => {
-                    onTodayFlagChanged?.()
-                    onClose()
-                  }, 250)
-                } catch {
-                  setError("フラグの更新に失敗しました")
-                } finally {
-                  setTodayFlagUpdating(false)
-                }
-              }}
-            >
-              {todayFlag ? "★ Moodo" : "☆ Moodo"}
-            </button>
+            <div className="modal-header-actions">
+              <button
+                type="button"
+                className="btn-postpone-modal"
+                disabled={postponing}
+                onClick={async () => {
+                  setPostponing(true)
+                  try {
+                    await postponeTask(editingTask.id)
+                    setClosing(true)
+                    setTimeout(() => {
+                      onPostponed?.()
+                      onClose()
+                    }, 250)
+                  } catch {
+                    setError("先送りに失敗しました")
+                  } finally {
+                    setPostponing(false)
+                  }
+                }}
+              >
+                先送り
+              </button>
+              <button
+                type="button"
+                className={`btn-today-flag-modal${todayFlag ? " btn-today-flag-modal--on" : ""}`}
+                disabled={todayFlagUpdating}
+                onClick={async () => {
+                  setTodayFlagUpdating(true)
+                  try {
+                    await toggleTodayFlag(editingTask.id, !todayFlag)
+                    setClosing(true)
+                    setTimeout(() => {
+                      onTodayFlagChanged?.()
+                      onClose()
+                    }, 250)
+                  } catch {
+                    setError("フラグの更新に失敗しました")
+                  } finally {
+                    setTodayFlagUpdating(false)
+                  }
+                }}
+              >
+                {todayFlag ? "★ Moodo" : "☆ Moodo"}
+              </button>
+            </div>
           )}
         </div>
         <form className="modal-form" onSubmit={handleSubmit}>

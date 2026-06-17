@@ -34,6 +34,12 @@ export async function updateTask(id: string, data: TaskCreate): Promise<Task> {
   return res.json()
 }
 
+export async function postponeTask(id: string): Promise<Task> {
+  const res = await fetch(`${BASE_URL}/tasks/${id}/postpone`, { method: "PATCH" })
+  if (!res.ok) throw new Error(`Failed to postpone task: ${res.status}`)
+  return res.json()
+}
+
 export async function fetchMood(): Promise<{ mood: string | null }> {
   const res = await fetch(`${BASE_URL}/mood`)
   if (!res.ok) throw new Error(`Failed to fetch mood: ${res.status}`)
