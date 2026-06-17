@@ -18,7 +18,7 @@ export interface PickupGroup {
 export interface PickupSectionProps {
   groups: PickupGroup[]
   onEdit: (task: Task) => void
-  onComplete: (id: string) => void
+  onComplete: (id: string) => Promise<void>
 }
 
 function parseDueDate(due_date: string): number {
@@ -68,15 +68,24 @@ function daysSinceCreated(createdAt: string | null): number {
 
 const COMPLETE_ANIM_MS = 400
 
-function TaskCard({ task, onEdit, onComplete }: { task: Task; onEdit: (t: Task) => void; onComplete: (id: string) => void }) {
+function TaskCard({ task, onEdit, onComplete }: { task: Task; onEdit: (t: Task) => void; onComplete: (id: string) => Promise<void> }) {
   const [completing, setCompleting] = useState(false)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current !== null) clearTimeout(timerRef.current)
+    }
+  }, [])
 
   const handleComplete = (e: React.MouseEvent) => {
     e.stopPropagation()
     if (completing) return
     if (!window.confirm(`「${task.title}」を完了にしますか？`)) return
     setCompleting(true)
-    setTimeout(() => onComplete(task.id), COMPLETE_ANIM_MS)
+    timerRef.current = setTimeout(() => {
+      onComplete(task.id).catch(() => setCompleting(false))
+    }, COMPLETE_ANIM_MS)
   }
 
   return (
