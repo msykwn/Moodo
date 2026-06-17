@@ -3,6 +3,7 @@ import { CompletionStatsPanel } from "./CompletionStats"
 import { MoodPanel } from "./MoodPanel"
 import { TaskList } from "./TaskList"
 import { TaskModal } from "./TaskModal"
+import { runScoring } from "./api"
 import type { EditingTask, Task, TaskCreate } from "./types"
 import "./app.css"
 
@@ -13,6 +14,32 @@ function App() {
   const [editingTask, setEditingTask] = useState<EditingTask | null>(null)
   const [splitInitialValues, setSplitInitialValues] = useState<Partial<TaskCreate> | undefined>(undefined)
   const splitKey = useRef(0)
+  const [scoring, setScoring] = useState(false)
+  const [scoreToast, setScoreToast] = useState<{ message: string; error: boolean } | null>(null)
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+    }
+  }, [])
+
+  const handleRunScoring = async () => {
+    setScoring(true)
+    try {
+      await runScoring()
+      setRefresh((n) => n + 1)
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+      setScoreToast({ message: "スコアを更新しました", error: false })
+      toastTimerRef.current = setTimeout(() => setScoreToast(null), 3000)
+    } catch (e) {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+      setScoreToast({ message: e instanceof Error ? e.message : "スコアリングに失敗しました", error: true })
+      toastTimerRef.current = setTimeout(() => setScoreToast(null), 5000)
+    } finally {
+      setScoring(false)
+    }
+  }
 
   const handleEdit = (task: Task) => {
     setEditingTask(task)
@@ -60,11 +87,16 @@ function App() {
 
   return (
     <div className="app">
+      {scoring && <div className="scoring-overlay"><span className="scoring-overlay__text">AIがスコアを計算中...</span></div>}
+      {scoreToast && <div className={`score-toast${scoreToast.error ? " score-toast--error" : ""}`}>{scoreToast.message}</div>}
       <header className="app-header">
         <h1>Moodo</h1>
         <div className="app-header-right">
           <CompletionStatsPanel refresh={refresh} />
           <MoodPanel />
+          <button className="btn-score" onClick={handleRunScoring} disabled={scoring}>
+            ✦ AIで計画
+          </button>
           <button className="btn-add" onClick={() => setEditingTask(NEW_TASK)}>
             + タスクを追加
           </button>

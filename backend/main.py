@@ -1,5 +1,6 @@
 import json
 import os
+import subprocess
 import tempfile
 import threading
 import uuid
@@ -12,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 _file_lock = threading.Lock()
+_scoring_lock = threading.Lock()
 
 app = FastAPI()
 
@@ -26,6 +28,7 @@ app.add_middleware(
 TASKS_FILE = Path(__file__).parent / "tasks.json"
 COMPLETED_TASKS_FILE = Path(__file__).parent / "completed_tasks.json"
 MOOD_FILE = Path(__file__).parent / "mood.json"
+SCORE_PROMPT_FILE = Path(__file__).parent.parent / "score-prompt.md"
 
 
 class TaskCreate(BaseModel):
@@ -270,6 +273,71 @@ def delete_task(task_id: str):
         if len(new_tasks) == len(tasks):
             raise HTTPException(status_code=404, detail="Task not found")
         _write_json(TASKS_FILE, new_tasks)
+
+
+@app.post("/tasks/score/run")
+def run_scoring():
+    if not _scoring_lock.acquire(blocking=False):
+        raise HTTPException(status_code=409, detail="スコアリングが既に実行中です")
+    try:
+        if not SCORE_PROMPT_FILE.exists():
+            raise HTTPException(status_code=500, detail=f"score-prompt.md が見つかりません: {SCORE_PROMPT_FILE}")
+
+        with _file_lock:
+            tasks = _read_json(TASKS_FILE, [])
+            mood = _read_json(MOOD_FILE, {})
+
+        template = SCORE_PROMPT_FILE.read_text(encoding="utf-8")
+        prompt = template.replace("{TASKS_JSON}", json.dumps(tasks, ensure_ascii=False, indent=2)).replace(
+            "{MOOD_JSON}", json.dumps(mood, ensure_ascii=False)
+        )
+
+        try:
+            proc = subprocess.Popen(
+                ["claude", "-p", prompt],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            try:
+                stdout, stderr = proc.communicate(timeout=120)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.communicate()
+                raise HTTPException(status_code=504, detail="スコアリングがタイムアウトしました")
+        except FileNotFoundError:
+            raise HTTPException(status_code=500, detail="claude コマンドが見つかりません")
+
+        if proc.returncode != 0:
+            raise HTTPException(status_code=500, detail=f"claude コマンドがエラーで終了しました: {stderr[:200]}")
+
+        # stdout からJSON配列を抽出して score を更新
+        text = stdout.strip()
+        start = text.find("[")
+        end = text.rfind("]")
+        if start == -1 or end == -1:
+            raise HTTPException(status_code=500, detail="claude の出力からスコアデータを取得できませんでした")
+        try:
+            score_list = json.loads(text[start:end + 1])
+        except json.JSONDecodeError as e:
+            raise HTTPException(status_code=500, detail=f"スコアデータのパースに失敗しました: {e}")
+
+        score_map = {item["id"]: item["score"] for item in score_list if "id" in item and "score" in item}
+        if not score_map:
+            raise HTTPException(status_code=500, detail="有効なスコアデータが含まれていませんでした")
+
+        with _file_lock:
+            tasks = _read_json(TASKS_FILE, [])
+            updated = 0
+            for task in tasks:
+                if task["id"] in score_map:
+                    task["score"] = score_map[task["id"]]
+                    updated += 1
+            _write_json(TASKS_FILE, tasks)
+
+        return {"ok": True, "updated": updated}
+    finally:
+        _scoring_lock.release()
 
 
 @app.get("/mood")
