@@ -158,6 +158,7 @@ export function TaskList({ refresh, onEdit, onComplete }: Props) {
       onComplete?.()
     } catch (e) {
       setCompleteError(e instanceof Error ? e.message : "完了にできませんでした")
+      throw e
     }
   }
 
