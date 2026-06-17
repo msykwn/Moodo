@@ -466,6 +466,29 @@ main {
   color: #7c3aed;
 }
 
+.btn-split {
+  background: none;
+  border: 1.5px solid #a78bfa;
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-family: inherit;
+  color: #7c3aed;
+  font-weight: 500;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.btn-split:hover:not(:disabled) {
+  background: #f5f3ff;
+  border-color: #7c3aed;
+}
+
+.btn-split:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .btn-save {
   background: #7c3aed;
   color: #fff;

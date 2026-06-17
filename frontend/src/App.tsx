@@ -3,7 +3,7 @@ import { CompletionStatsPanel } from "./CompletionStats"
 import { MoodPanel } from "./MoodPanel"
 import { TaskList } from "./TaskList"
 import { TaskModal } from "./TaskModal"
-import type { EditingTask, Task } from "./types"
+import type { EditingTask, Task, TaskCreate } from "./types"
 import "./app.css"
 
 export const NEW_TASK: EditingTask = { __new: true }
@@ -11,6 +11,7 @@ export const NEW_TASK: EditingTask = { __new: true }
 function App() {
   const [refresh, setRefresh] = useState(0)
   const [editingTask, setEditingTask] = useState<EditingTask | null>(null)
+  const [splitInitialValues, setSplitInitialValues] = useState<Partial<Task> | undefined>(undefined)
 
   const handleEdit = (task: Task) => {
     setEditingTask(task)
@@ -45,8 +46,16 @@ function App() {
 
   const handleTaskSaved = () => {
     setEditingTask(null)
+    setSplitInitialValues(undefined)
     setRefresh((n) => n + 1)
   }
+
+  const handleSplit = useCallback((savedValues: TaskCreate) => {
+    const title = savedValues.title.trim() + "（2）"
+    setSplitInitialValues({ ...savedValues, title } as Partial<Task>)
+    setEditingTask(NEW_TASK)
+    setRefresh((n) => n + 1)
+  }, [])
 
   return (
     <div className="app">
@@ -64,10 +73,12 @@ function App() {
         <TaskList refresh={refresh} onEdit={handleEdit} onComplete={() => setRefresh((n) => n + 1)} />
       </main>
       <TaskModal
-        key={editingTask === null ? 'closed' : ('__new' in editingTask ? 'new' : editingTask.id)}
+        key={editingTask === null ? 'closed' : ('__new' in editingTask ? `new-${splitInitialValues?.title ?? ''}` : editingTask.id)}
         editingTask={editingTask}
-        onClose={() => setEditingTask(null)}
+        initialValues={splitInitialValues}
+        onClose={() => { setEditingTask(null); setSplitInitialValues(undefined) }}
         onSaved={handleTaskSaved}
+        onSplit={handleSplit}
       />
     </div>
   )
