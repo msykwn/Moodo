@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react"
+import confetti from "canvas-confetti"
 import type { Task } from "./types"
 import { fetchTasks, completeTask } from "./api"
 import { scoreClass, scoreLabel } from "./score"
@@ -18,7 +19,7 @@ export interface PickupGroup {
 export interface PickupSectionProps {
   groups: PickupGroup[]
   onEdit: (task: Task) => void
-  onComplete: (id: string, title: string) => void
+  onComplete: (id: string) => Promise<void>
 }
 
 function parseDueDate(due_date: string): number {
@@ -78,10 +79,35 @@ function daysSinceCreated(createdAt: string | null): number {
 }
 
 
-function TaskCard({ task, onEdit, onComplete }: { task: Task; onEdit: (t: Task) => void; onComplete: (id: string, title: string) => void }) {
+const COMPLETE_ANIM_MS = 400
+
+function TaskCard({ task, onEdit, onComplete }: { task: Task; onEdit: (t: Task) => void; onComplete: (id: string) => Promise<void> }) {
+  const [completing, setCompleting] = useState(false)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const flag = task.today_flag ?? false
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current !== null) clearTimeout(timerRef.current)
+    }
+  }, [])
+
+  const handleComplete = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (completing) return
+    if (!window.confirm(`「${task.title}」を完了にしますか？`)) return
+    setCompleting(true)
+    confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } })
+    timerRef.current = setTimeout(() => {
+      onComplete(task.id).catch(() => setCompleting(false))
+    }, COMPLETE_ANIM_MS)
+  }
+
   return (
-    <li className={`task-card${isUrgent(task) ? " task-card--urgent" : ""}${flag ? " task-card--today" : ""}`} onClick={() => onEdit(task)}>
+    <li
+      className={`task-card${isUrgent(task) ? " task-card--urgent" : ""}${flag ? " task-card--today" : ""}${completing ? " task-card--completing" : ""}`}
+      onClick={() => onEdit(task)}
+    >
       <div className={scoreClass(task.score)}>{scoreLabel(task.score)}</div>
       <div className="task-body">
         <p className="task-title">
@@ -97,8 +123,8 @@ function TaskCard({ task, onEdit, onComplete }: { task: Task; onEdit: (t: Task) 
         </div>
       </div>
       <div className="task-actions">
-        <button onClick={(e) => { e.stopPropagation(); onEdit(task) }}>編集</button>
-        <button onClick={(e) => { e.stopPropagation(); onComplete(task.id, task.title) }}>完了</button>
+        <button disabled={completing} onClick={(e) => { e.stopPropagation(); onEdit(task) }}>編集</button>
+        <button disabled={completing} onClick={handleComplete}>完了</button>
       </div>
     </li>
   )
@@ -132,8 +158,7 @@ export function TaskList({ refresh, onEdit, onComplete }: Props) {
     return () => controller.abort()
   }, [refresh])
 
-  const handleComplete = async (id: string, title: string) => {
-    if (!window.confirm(`「${title}」を完了にしますか？`)) return
+  const handleComplete = async (id: string) => {
     setCompleteError(null)
     try {
       await completeTask(id)
@@ -141,6 +166,7 @@ export function TaskList({ refresh, onEdit, onComplete }: Props) {
       onComplete?.()
     } catch (e) {
       setCompleteError(e instanceof Error ? e.message : "完了にできませんでした")
+      throw e
     }
   }
 
