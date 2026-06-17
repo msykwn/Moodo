@@ -174,6 +174,8 @@ export function TaskList({ refresh, onEdit, onComplete }: Props) {
   if (error) return <p className="status-message error">{error}</p>
   if (tasks.length === 0) return <p className="status-message">タスクがありません。追加してみましょう！</p>
 
+  const overdueTasks = tasks.filter((t) => isOverdue(t.due_date))
+
   const todayTasks = tasks.filter((t) => t.due_date === todayLocalISO())
   const todayIds = new Set(todayTasks.map((t) => t.id))
 
@@ -182,6 +184,7 @@ export function TaskList({ refresh, onEdit, onComplete }: Props) {
     .sort((a, b) => (a.created_at ?? "").localeCompare(b.created_at ?? ""))
 
   const pickupGroups: PickupGroup[] = [
+    ...(overdueTasks.length > 0 ? [{ title: "期限切れ", tasks: overdueTasks }] : []),
     ...(todayTasks.length > 0 ? [{ title: "今日期限", tasks: todayTasks }] : []),
     ...(buriedTasks.length > 0 ? [{ title: "積みタスク", tasks: buriedTasks }] : []),
   ]
