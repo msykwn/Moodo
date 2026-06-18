@@ -3,7 +3,7 @@ import confetti from "canvas-confetti"
 import type { DueFilter, Task } from "./types"
 import { fetchTasks, completeTask } from "./api"
 import { scoreClass, scoreLabel } from "./score"
-import { todayLocalISO } from "./utils"
+import { todayLocalISO, tomorrowLocalISO } from "./utils"
 
 interface Props {
   refresh: number
@@ -174,19 +174,13 @@ export function TaskList({ refresh, onEdit, onComplete, dueFilter, onClearDueFil
 
   if (loading) return <p className="status-message">読み込み中...</p>
   if (error) return <p className="status-message error">{error}</p>
-  if (tasks.length === 0) return <p className="status-message">タスクがありません。追加してみましょう！</p>
 
   const overdueTasks = tasks.filter((t) => isOverdue(t.due_date))
 
   const todayTasks = tasks.filter((t) => t.due_date === todayLocalISO())
   const todayIds = new Set(todayTasks.map((t) => t.id))
 
-  const tomorrowISO = (() => {
-    const d = new Date()
-    d.setDate(d.getDate() + 1)
-    return d.toISOString().slice(0, 10)
-  })()
-  const tomorrowTasks = tasks.filter((t) => t.due_date === tomorrowISO)
+  const tomorrowTasks = tasks.filter((t) => t.due_date === tomorrowLocalISO())
 
   const buriedTasks = tasks
     .filter((t) => !todayIds.has(t.id) && !isOverdue(t.due_date) && daysSinceCreated(t.created_at) >= BURIED_THRESHOLD_DAYS)
@@ -201,12 +195,26 @@ export function TaskList({ refresh, onEdit, onComplete, dueFilter, onClearDueFil
   if (dueFilter) {
     const filteredTasks = dueFilter === "today" ? todayTasks : tomorrowTasks
     const filterLabel = dueFilter === "today" ? "今日期限" : "明日期限"
+    const estimateCounts: Record<string, number> = {}
+    const botherCounts: Record<string, number> = {}
+    for (const t of filteredTasks) {
+      estimateCounts[t.estimate_size] = (estimateCounts[t.estimate_size] ?? 0) + 1
+      botherCounts[t.bother_level] = (botherCounts[t.bother_level] ?? 0) + 1
+    }
     return (
       <>
         {completeError && <p className="status-message error">{completeError}</p>}
         <div className="due-filter-bar">
           <span className="due-filter-label">{filterLabel}のタスク（{filteredTasks.length}件）</span>
-          <button className="due-filter-clear" onClick={onClearDueFilter}>× すべて表示</button>
+          <span className="due-filter-breakdown">
+            {(["大", "中", "小"] as const).filter((s) => estimateCounts[s]).map((s) => (
+              <span key={s} className="due-filter-chip">{s} {estimateCounts[s]}</span>
+            ))}
+            {(["重い", "まあまあ", "チョロ"] as const).filter((b) => botherCounts[b]).map((b) => (
+              <span key={b} className="due-filter-chip">{b} {botherCounts[b]}</span>
+            ))}
+          </span>
+          <button className="due-filter-clear" onClick={() => { setCompleteError(null); onClearDueFilter?.() }}>× すべて表示</button>
         </div>
         {filteredTasks.length === 0 ? (
           <p className="status-message">該当するタスクがありません</p>
@@ -220,6 +228,8 @@ export function TaskList({ refresh, onEdit, onComplete, dueFilter, onClearDueFil
       </>
     )
   }
+
+  if (tasks.length === 0) return <p className="status-message">タスクがありません。追加してみましょう！</p>
 
   return (
     <>
