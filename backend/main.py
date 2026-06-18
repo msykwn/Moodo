@@ -32,9 +32,12 @@ PROJECT_ROOT = Path(__file__).parent.parent
 SCORE_PROMPT_FILE = PROJECT_ROOT / "score-prompt.md"
 
 
+ESTIMATE_POINTS: dict[str, int] = {"極小": 1, "小": 2, "中": 5, "大": 8, "特大": 13}
+
+
 class TaskCreate(BaseModel):
     title: str
-    estimate_size: Literal["大", "中", "小"]
+    estimate_size: Literal["極小", "小", "中", "大", "特大"]
     bother_level: Literal["チョロ", "まあまあ", "重い"]
     due_date: Annotated[str, Field(min_length=1)]
     importance: Literal["低", "普通", "高"]
@@ -95,6 +98,12 @@ def create_task(task_in: TaskCreate):
         tasks.append(new_task)
         _write_json(TASKS_FILE, tasks)
     return new_task
+
+
+@app.get("/tasks/completed", response_model=list[CompletedTask])
+def get_completed_tasks():
+    with _file_lock:
+        return _read_json(COMPLETED_TASKS_FILE, [])
 
 
 @app.put("/tasks/{task_id}", response_model=Task)
@@ -193,6 +202,8 @@ def complete_task(task_id: str):
 class CompletionStats(BaseModel):
     today: int
     this_week: int
+    today_points: int
+    this_week_points: int
 
 
 @app.get("/stats/completions", response_model=CompletionStats)
@@ -204,6 +215,8 @@ def get_completion_stats():
 
     today_count = 0
     week_count = 0
+    today_points = 0
+    week_points = 0
     for task in completed_tasks:
         raw = task.get("completed_date")
         if not raw:
@@ -212,17 +225,151 @@ def get_completion_stats():
             d = date.fromisoformat(raw)
         except ValueError:
             continue
+        points = ESTIMATE_POINTS.get(task.get("estimate_size", ""), 0)
         if d == today:
             today_count += 1
+            today_points += points
         if d >= week_start:
             week_count += 1
+            week_points += points
 
-    return {"today": today_count, "this_week": week_count}
+    return {"today": today_count, "this_week": week_count, "today_points": today_points, "this_week_points": week_points}
+
+
+class WeeklyVelocity(BaseModel):
+    week_start: str
+    points: int
+
+
+class DailyVelocity(BaseModel):
+    date: str
+    points: int
+
+
+class DailyPlanned(BaseModel):
+    date: str
+    points: int
+
+
+@app.get("/stats/planned/week", response_model=list[DailyPlanned])
+def get_weekly_daily_planned(week_start: str | None = None):
+    with _file_lock:
+        tasks = _read_json(TASKS_FILE, [])
+    today = date.today()
+    if week_start:
+        try:
+            ws = date.fromisoformat(week_start)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="week_start must be YYYY-MM-DD")
+    else:
+        ws = today - timedelta(days=today.weekday())
+
+    day_points: dict[str, int] = {}
+    for i in range(7):
+        d = ws + timedelta(days=i)
+        if d >= today:
+            day_points[d.isoformat()] = 0
+
+    for task in tasks:
+        raw = task.get("due_date")
+        if not raw or raw not in day_points:
+            continue
+        day_points[raw] += ESTIMATE_POINTS.get(task.get("estimate_size", ""), 0)
+
+    return [{"date": d, "points": pts} for d, pts in sorted(day_points.items())]
+
+
+@app.get("/stats/velocity/week", response_model=list[DailyVelocity])
+def get_weekly_daily_velocity(week_start: str | None = None):
+    with _file_lock:
+        completed_tasks = _read_json(COMPLETED_TASKS_FILE, [])
+    today = date.today()
+    if week_start:
+        try:
+            ws = date.fromisoformat(week_start)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="week_start must be YYYY-MM-DD")
+    else:
+        ws = today - timedelta(days=today.weekday())
+
+    day_points: dict[str, int] = {}
+    for i in range(7):
+        d = (ws + timedelta(days=i)).isoformat()
+        day_points[d] = 0
+
+    for task in completed_tasks:
+        raw = task.get("completed_date")
+        if not raw or raw not in day_points:
+            continue
+        day_points[raw] += ESTIMATE_POINTS.get(task.get("estimate_size", ""), 0)
+
+    return [{"date": d, "points": pts} for d, pts in sorted(day_points.items())]
+
+
+class WeeklyPlanned(BaseModel):
+    week_start: str
+    points: int
+
+
+@app.get("/stats/planned", response_model=list[WeeklyPlanned])
+def get_planned_stats(weeks: int = Query(default=3, ge=1, le=52)):
+    with _file_lock:
+        tasks = _read_json(TASKS_FILE, [])
+    today = date.today()
+    current_week_start = today - timedelta(days=today.weekday())
+
+    week_points: dict[str, int] = {}
+    for i in range(weeks):
+        ws = (current_week_start + timedelta(weeks=i)).isoformat()
+        week_points[ws] = 0
+
+    for task in tasks:
+        raw = task.get("due_date")
+        if not raw:
+            continue
+        try:
+            d = date.fromisoformat(raw)
+        except ValueError:
+            continue
+        ws = (d - timedelta(days=d.weekday())).isoformat()
+        if ws in week_points:
+            week_points[ws] += ESTIMATE_POINTS.get(task.get("estimate_size", ""), 0)
+
+    return [{"week_start": ws, "points": pts} for ws, pts in sorted(week_points.items())]
+
+
+@app.get("/stats/velocity", response_model=list[WeeklyVelocity])
+def get_velocity(weeks: int = Query(default=4, ge=1, le=52)):
+    with _file_lock:
+        completed_tasks = _read_json(COMPLETED_TASKS_FILE, [])
+    today = date.today()
+    current_week_start = today - timedelta(days=today.weekday())
+
+    week_points: dict[str, int] = {}
+    for i in range(weeks):
+        ws = (current_week_start - timedelta(weeks=i)).isoformat()
+        week_points[ws] = 0
+
+    for task in completed_tasks:
+        raw = task.get("completed_date")
+        if not raw:
+            continue
+        try:
+            d = date.fromisoformat(raw)
+        except ValueError:
+            continue
+        ws = (d - timedelta(days=d.weekday())).isoformat()
+        if ws in week_points:
+            week_points[ws] += ESTIMATE_POINTS.get(task.get("estimate_size", ""), 0)
+
+    return [{"week_start": ws, "points": pts} for ws, pts in sorted(week_points.items())]
 
 
 class DueStats(BaseModel):
     due_today: int
     due_tomorrow: int
+    due_today_points: int
+    due_tomorrow_points: int
 
 
 @app.get("/stats/due", response_model=DueStats)
@@ -234,6 +381,8 @@ def get_due_stats():
 
     due_today = 0
     due_tomorrow = 0
+    due_today_points = 0
+    due_tomorrow_points = 0
     for task in tasks:
         raw = task.get("due_date")
         if not raw:
@@ -242,12 +391,15 @@ def get_due_stats():
             d = date.fromisoformat(raw)
         except ValueError:
             continue
+        points = ESTIMATE_POINTS.get(task.get("estimate_size", ""), 0)
         if d == today:
             due_today += 1
+            due_today_points += points
         elif d == tomorrow:
             due_tomorrow += 1
+            due_tomorrow_points += points
 
-    return {"due_today": due_today, "due_tomorrow": due_tomorrow}
+    return {"due_today": due_today, "due_tomorrow": due_tomorrow, "due_today_points": due_today_points, "due_tomorrow_points": due_tomorrow_points}
 
 
 @app.patch("/tasks/{task_id}/postpone", response_model=Task)

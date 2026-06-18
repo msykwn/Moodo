@@ -207,7 +207,7 @@ export function TaskList({ refresh, onEdit, onComplete, dueFilter, onClearDueFil
         <div className="due-filter-bar">
           <span className="due-filter-label">{filterLabel}のタスク（{filteredTasks.length}件）</span>
           <span className="due-filter-breakdown">
-            {(["大", "中", "小"] as const).filter((s) => estimateCounts[s]).map((s) => (
+            {(["特大", "大", "中", "小", "極小"] as const).filter((s) => estimateCounts[s]).map((s) => (
               <span key={s} className="due-filter-chip">{s} {estimateCounts[s]}</span>
             ))}
             {(["重い", "まあまあ", "チョロ"] as const).filter((b) => botherCounts[b]).map((b) => (

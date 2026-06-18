@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { CompletionStatsPanel } from "./CompletionStats"
 import { MoodPanel } from "./MoodPanel"
 import { TaskList } from "./TaskList"
+import { CompletedTaskList } from "./CompletedTaskList"
 import { TaskModal } from "./TaskModal"
 import { runScoring } from "./api"
 import type { DueFilter, EditingTask, Task, TaskCreate } from "./types"
@@ -18,6 +19,7 @@ function App() {
   const [scoreToast, setScoreToast] = useState<{ message: string; error: boolean } | null>(null)
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [dueFilter, setDueFilter] = useState<DueFilter>(null)
+  const [completionFilter, setCompletionFilter] = useState(false)
 
   useEffect(() => {
     return () => {
@@ -96,8 +98,10 @@ function App() {
           <CompletionStatsPanel
             refresh={refresh}
             dueFilter={dueFilter}
-            onDueTodayClick={() => setDueFilter((f) => f === "today" ? null : "today")}
-            onDueTomorrowClick={() => setDueFilter((f) => f === "tomorrow" ? null : "tomorrow")}
+            onDueTodayClick={() => { setCompletionFilter(false); setDueFilter((f) => f === "today" ? null : "today") }}
+            onDueTomorrowClick={() => { setCompletionFilter(false); setDueFilter((f) => f === "tomorrow" ? null : "tomorrow") }}
+            completionFilter={completionFilter}
+            onCompletionClick={() => { setDueFilter(null); setCompletionFilter((f) => !f) }}
           />
           <MoodPanel />
           <button className="btn-score" onClick={handleRunScoring} disabled={scoring}>
@@ -109,13 +113,20 @@ function App() {
         </div>
       </header>
       <main>
-        <TaskList
-          refresh={refresh}
-          onEdit={handleEdit}
-          onComplete={() => setRefresh((n) => n + 1)}
-          dueFilter={dueFilter}
-          onClearDueFilter={() => setDueFilter(null)}
-        />
+        {completionFilter ? (
+          <CompletedTaskList
+            refresh={refresh}
+            onClearFilter={() => setCompletionFilter(false)}
+          />
+        ) : (
+          <TaskList
+            refresh={refresh}
+            onEdit={handleEdit}
+            onComplete={() => setRefresh((n) => n + 1)}
+            dueFilter={dueFilter}
+            onClearDueFilter={() => setDueFilter(null)}
+          />
+        )}
       </main>
       <TaskModal
         key={editingTask === null ? 'closed' : ('__new' in editingTask ? `new-${splitKey.current}` : editingTask.id)}
