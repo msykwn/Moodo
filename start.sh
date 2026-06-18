@@ -12,7 +12,7 @@ BACKEND_PID=$!
 # フロントエンド起動
 echo "Starting frontend..."
 cd "$ROOT/frontend"
-npm install --silent
+npm ci --silent
 npm run dev &
 FRONTEND_PID=$!
 
