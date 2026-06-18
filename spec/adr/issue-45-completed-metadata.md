@@ -2,7 +2,7 @@
 issue: 45
 title: タスク完了時に分析用メタデータを自動記録
 priority: 1
-status: 未着手
+status: 完了
 ---
 
 ## 背景・目的
@@ -70,10 +70,10 @@ class CompletedTask(Task):
 
 ## 完了条件
 
-- [ ] タスクを完了すると `completed_tasks.json` に `completed_mood` / `days_to_complete` / `due_diff_days` が記録される
-- [ ] `created_at` が null の既存タスクでも完了操作がエラーにならない（`days_to_complete: null` で保存）
-- [ ] `due_date` が null のタスクでも完了操作がエラーにならない（`due_diff_days: null` で保存）
-- [ ] `mood.json` が存在しない場合も完了操作がエラーにならない（`completed_mood: null` で保存）
+- [x] タスクを完了すると `completed_tasks.json` に `completed_mood` / `days_to_complete` / `due_diff_days` が記録される
+- [x] `created_at` が null の既存タスクでも完了操作がエラーにならない（`days_to_complete: null` で保存）
+- [x] `due_date` が null のタスクでも完了操作がエラーにならない（`due_diff_days: null` で保存）
+- [x] `mood.json` が存在しない場合も完了操作がエラーにならない（`completed_mood: null` で保存）
 
 ## 注意事項
 
@@ -82,3 +82,12 @@ class CompletedTask(Task):
 - 既存の `completed_tasks.json` に追記される形なので、過去の完了タスクには新フィールドが存在しない場合がある（許容）
 - `_file_lock` の範囲内で `mood.json` の読み込みも行うこと（整合性のため）
 - `completed_mood` は `mood.json` の `mood` フィールドの文字列をそのまま保存する
+
+## 仕様変更の経緯
+
+- 「完了タスク一覧での表示は issue #43 で対応予定」としていたが、ベロシティ計測機能（issue #56）の実装時にあわせて完了タスク一覧画面（CompletedTaskList）が実装された
+
+## この決定によって生じる影響
+
+- 過去の完了タスク（メタデータ追加前）には `completed_mood` / `days_to_complete` / `due_diff_days` フィールドが存在しない場合があるが、これは許容（後方互換性あり）
+- `_file_lock` の範囲内で `mood.json` の読み込みも行うことで整合性を確保している
