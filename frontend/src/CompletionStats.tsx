@@ -1,15 +1,22 @@
 import { useEffect, useRef, useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { fetchCompletionStats, fetchDueStats } from "./api"
-import type { CompletionStats, DueStats } from "./types"
+import type { CompletionStats, DueFilter, DueStats } from "./types"
 
 interface Props {
   refresh: number
+  dueFilter: DueFilter
+  onDueTodayClick: () => void
+  onDueTomorrowClick: () => void
+  completionFilter: boolean
+  onCompletionClick: () => void
 }
 
-export function CompletionStatsPanel({ refresh }: Props) {
+export function CompletionStatsPanel({ refresh, dueFilter, onDueTodayClick, onDueTomorrowClick, completionFilter, onCompletionClick }: Props) {
   const [completionStats, setCompletionStats] = useState<CompletionStats | null>(null)
   const [dueStats, setDueStats] = useState<DueStats | null>(null)
   const abortRef = useRef<AbortController | null>(null)
+  const navigate = useNavigate()
 
   useEffect(() => {
     abortRef.current?.abort()
@@ -39,16 +46,36 @@ export function CompletionStatsPanel({ refresh }: Props) {
   return (
     <div className="completion-stats">
       {dueStats && (
-        <>
-          <span className="completion-stat due-stat">今日期限 <strong>{dueStats.due_today}</strong></span>
-          <span className="completion-stat due-stat">明日期限 <strong>{dueStats.due_tomorrow}</strong></span>
-        </>
+        <div className="completion-stats__group">
+          <button
+            className={`completion-stat due-stat due-stat--btn${dueFilter === "today" ? " due-stat--active" : ""}`}
+            onClick={onDueTodayClick}
+          >
+            今日期限 <strong>{dueStats.due_today}({dueStats.due_today_points}pt)</strong>
+          </button>
+          <button
+            className={`completion-stat due-stat due-stat--btn${dueFilter === "tomorrow" ? " due-stat--active" : ""}`}
+            onClick={onDueTomorrowClick}
+          >
+            明日期限 <strong>{dueStats.due_tomorrow}({dueStats.due_tomorrow_points}pt)</strong>
+          </button>
+        </div>
       )}
       {completionStats && (
-        <>
-          <span className="completion-stat">今日完了 <strong>{completionStats.today}</strong></span>
-          <span className="completion-stat">今週完了 <strong>{completionStats.this_week}</strong></span>
-        </>
+        <div className="completion-stats__group">
+          <button
+            className={`completion-stat completion-stat--btn${completionFilter ? " completion-stat--active" : ""}`}
+            onClick={onCompletionClick}
+          >
+            今日完了 <strong>{completionStats.today}({completionStats.today_points}pt)</strong>
+          </button>
+          <button
+            className="completion-stat completion-stat--btn"
+            onClick={() => navigate("/velocity")}
+          >
+            今週 <strong>{completionStats.this_week}({completionStats.this_week_points}pt)</strong>
+          </button>
+        </div>
       )}
     </div>
   )

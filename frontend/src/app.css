@@ -430,7 +430,17 @@ main {
 .completion-stats {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 4px;
+}
+
+.completion-stats__group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.completion-stats__group + .completion-stats__group {
+  margin-left: 10px;
 }
 
 .completion-stat {
@@ -446,6 +456,104 @@ main {
 
 .completion-stat.due-stat strong {
   color: #d97706;
+}
+
+.due-stat__label {
+  color: #9d8ec0;
+  font-size: 0.75rem;
+  margin-right: 2px;
+}
+
+.due-stat__sep {
+  color: #c4b5fd;
+  font-size: 0.8rem;
+}
+
+.completion-stats__due-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 4px;
+}
+
+.due-stat__day-label {
+  display: block;
+  font-size: 0.7rem;
+  color: #9d8ec0;
+  line-height: 1.2;
+}
+
+.due-stat--btn {
+  background: none;
+  border: 1.5px solid transparent;
+  border-radius: 6px;
+  padding: 2px 2px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.due-stat--btn:hover {
+  border-color: #fbbf24;
+  background: #fffbeb;
+}
+
+.due-stat--active {
+  border-color: #f59e0b !important;
+  background: #fef3c7 !important;
+}
+
+/* 期限フィルターバー */
+.due-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 8px 14px;
+  background: #fef3c7;
+  border: 1.5px solid #fbbf24;
+  border-radius: 8px;
+}
+
+.due-filter-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #b45309;
+  white-space: nowrap;
+}
+
+.due-filter-breakdown {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.due-filter-chip {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: #fde68a;
+  color: #92400e;
+}
+
+.due-filter-clear {
+  background: none;
+  border: 1.5px solid #fbbf24;
+  border-radius: 6px;
+  padding: 2px 10px;
+  font-size: 0.78rem;
+  font-family: inherit;
+  color: #b45309;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.due-filter-clear:hover {
+  background: #fde68a;
+  border-color: #f59e0b;
 }
 
 /* モーダル */
@@ -896,5 +1004,173 @@ main {
 .task-card--today:hover {
   background: #fef3c7;
   border-color: #f59e0b;
+}
+
+.task-card--completed {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.task-card--completed:hover {
+  border-color: #ede9fe;
+  background: #fff;
+}
+
+/* 完了統計ボタン */
+.completion-stat--btn {
+  background: none;
+  border: 1.5px solid transparent;
+  border-radius: 6px;
+  padding: 2px 2px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.completion-stat--btn:hover {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.completion-stat--active {
+  border-color: #16a34a !important;
+  background: #f0fdf4 !important;
+}
+
+/* 戻るボタン */
+.btn-back {
+  background: none;
+  border: 1.5px solid #ddd6fe;
+  border-radius: 8px;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-family: inherit;
+  color: #7c3aed;
+  font-weight: 600;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.btn-back:hover {
+  border-color: #a78bfa;
+  background: #f3f0ff;
+}
+
+.btn-this-week {
+  background: none;
+  border: 1.5px solid #ddd6fe;
+  border-radius: 8px;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-family: inherit;
+  color: #7c3aed;
+  font-weight: 600;
+  transition: border-color 0.15s, background 0.15s;
+  margin-left: auto;
+}
+
+.btn-this-week:hover {
+  border-color: #a78bfa;
+  background: #f3f0ff;
+}
+
+.btn-week-nav {
+  background: none;
+  border: 1.5px solid #ddd6fe;
+  border-radius: 8px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-family: inherit;
+  color: #7c3aed;
+  font-weight: 600;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.btn-week-nav:hover:not(:disabled) {
+  border-color: #a78bfa;
+  background: #f3f0ff;
+}
+
+.btn-week-nav:disabled {
+  color: #c4b5fd;
+  border-color: #ede9fe;
+  cursor: default;
+}
+
+/* ベロシティページ */
+.velocity-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px 20px;
+}
+
+.velocity-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 32px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #ede9fe;
+}
+
+.velocity-header__nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.velocity-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #7c3aed;
+  letter-spacing: -0.5px;
+}
+
+.velocity-loading,
+.velocity-error,
+.velocity-empty {
+  text-align: center;
+  color: #a78bfa;
+  margin-top: 48px;
+}
+
+.velocity-error {
+  color: #ef4444;
+}
+
+.velocity-chart {
+  padding: 16px 0 0;
+  background: #faf8ff;
+  border: 1.5px solid #ede9fe;
+  border-radius: 16px;
+  padding: 24px 16px 16px;
+}
+
+.velocity-svg {
+  width: 100%;
+  max-width: 900px;
+  display: block;
+  margin: 0 auto;
+}
+
+
+.velocity-line {
+  stroke-dasharray: 1200;
+  stroke-dashoffset: 1200;
+  animation: draw-line 1s ease forwards;
+}
+
+@keyframes draw-line {
+  to { stroke-dashoffset: 0; }
+}
+
+.velocity-point-group circle {
+  transition: r 0.15s ease;
+}
+
+.velocity-point-group:hover circle {
+  r: 7;
 }
 

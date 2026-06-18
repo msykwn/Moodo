@@ -15,7 +15,7 @@ interface Props {
 
 const BOTHER_LEVELS: BotherLevel[] = ["チョロ", "まあまあ", "重い"]
 const IMPORTANCES: Importance[] = ["低", "普通", "高"]
-const ESTIMATE_SIZES: EstimateSize[] = ["小", "中", "大"]
+const ESTIMATE_SIZES: EstimateSize[] = ["極小", "小", "中", "大", "特大"]
 
 function ToggleGroup<T extends string>({
   label,

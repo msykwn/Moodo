@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState } from "react"
 import confetti from "canvas-confetti"
-import type { Task } from "./types"
+import type { DueFilter, Task } from "./types"
 import { fetchTasks, completeTask } from "./api"
 import { scoreClass, scoreLabel } from "./score"
-import { todayLocalISO } from "./utils"
+import { todayLocalISO, tomorrowLocalISO } from "./utils"
 
 interface Props {
   refresh: number
   onEdit: (task: Task) => void
   onComplete?: () => void
+  dueFilter?: DueFilter
+  onClearDueFilter?: () => void
 }
 
 export interface PickupGroup {
@@ -130,7 +132,7 @@ function TaskCard({ task, onEdit, onComplete }: { task: Task; onEdit: (t: Task) 
   )
 }
 
-export function TaskList({ refresh, onEdit, onComplete }: Props) {
+export function TaskList({ refresh, onEdit, onComplete, dueFilter, onClearDueFilter }: Props) {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -172,12 +174,13 @@ export function TaskList({ refresh, onEdit, onComplete }: Props) {
 
   if (loading) return <p className="status-message">読み込み中...</p>
   if (error) return <p className="status-message error">{error}</p>
-  if (tasks.length === 0) return <p className="status-message">タスクがありません。追加してみましょう！</p>
 
   const overdueTasks = tasks.filter((t) => isOverdue(t.due_date))
 
   const todayTasks = tasks.filter((t) => t.due_date === todayLocalISO())
   const todayIds = new Set(todayTasks.map((t) => t.id))
+
+  const tomorrowTasks = tasks.filter((t) => t.due_date === tomorrowLocalISO())
 
   const buriedTasks = tasks
     .filter((t) => !todayIds.has(t.id) && !isOverdue(t.due_date) && daysSinceCreated(t.created_at) >= BURIED_THRESHOLD_DAYS)
@@ -189,13 +192,50 @@ export function TaskList({ refresh, onEdit, onComplete }: Props) {
     ...(buriedTasks.length > 0 ? [{ title: "積みタスク", tasks: buriedTasks }] : []),
   ]
 
-  const mainTasks = tasks
+  if (dueFilter) {
+    const filteredTasks = dueFilter === "today" ? todayTasks : tomorrowTasks
+    const filterLabel = dueFilter === "today" ? "今日期限" : "明日期限"
+    const estimateCounts: Record<string, number> = {}
+    const botherCounts: Record<string, number> = {}
+    for (const t of filteredTasks) {
+      estimateCounts[t.estimate_size] = (estimateCounts[t.estimate_size] ?? 0) + 1
+      botherCounts[t.bother_level] = (botherCounts[t.bother_level] ?? 0) + 1
+    }
+    return (
+      <>
+        {completeError && <p className="status-message error">{completeError}</p>}
+        <div className="due-filter-bar">
+          <span className="due-filter-label">{filterLabel}のタスク（{filteredTasks.length}件）</span>
+          <span className="due-filter-breakdown">
+            {(["特大", "大", "中", "小", "極小"] as const).filter((s) => estimateCounts[s]).map((s) => (
+              <span key={s} className="due-filter-chip">{s} {estimateCounts[s]}</span>
+            ))}
+            {(["重い", "まあまあ", "チョロ"] as const).filter((b) => botherCounts[b]).map((b) => (
+              <span key={b} className="due-filter-chip">{b} {botherCounts[b]}</span>
+            ))}
+          </span>
+          <button className="due-filter-clear" onClick={() => { setCompleteError(null); onClearDueFilter?.() }}>× すべて表示</button>
+        </div>
+        {filteredTasks.length === 0 ? (
+          <p className="status-message">該当するタスクがありません</p>
+        ) : (
+          <ul className="task-list">
+            {filteredTasks.map((task) => (
+              <TaskCard key={task.id} task={task} onEdit={onEdit} onComplete={handleComplete} />
+            ))}
+          </ul>
+        )}
+      </>
+    )
+  }
+
+  if (tasks.length === 0) return <p className="status-message">タスクがありません。追加してみましょう！</p>
 
   return (
     <>
       {completeError && <p className="status-message error">{completeError}</p>}
       <ul className="task-list">
-        {mainTasks.map((task) => (
+        {tasks.map((task) => (
           <TaskCard key={task.id} task={task} onEdit={onEdit} onComplete={handleComplete} />
         ))}
       </ul>
