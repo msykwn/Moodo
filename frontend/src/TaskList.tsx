@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import confetti from "canvas-confetti"
-import type { Task } from "./types"
+import type { DueFilter, Task } from "./types"
 import { fetchTasks, completeTask } from "./api"
 import { scoreClass, scoreLabel } from "./score"
 import { todayLocalISO } from "./utils"
@@ -9,6 +9,8 @@ interface Props {
   refresh: number
   onEdit: (task: Task) => void
   onComplete?: () => void
+  dueFilter?: DueFilter
+  onClearDueFilter?: () => void
 }
 
 export interface PickupGroup {
@@ -130,7 +132,7 @@ function TaskCard({ task, onEdit, onComplete }: { task: Task; onEdit: (t: Task) 
   )
 }
 
-export function TaskList({ refresh, onEdit, onComplete }: Props) {
+export function TaskList({ refresh, onEdit, onComplete, dueFilter, onClearDueFilter }: Props) {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -179,6 +181,13 @@ export function TaskList({ refresh, onEdit, onComplete }: Props) {
   const todayTasks = tasks.filter((t) => t.due_date === todayLocalISO())
   const todayIds = new Set(todayTasks.map((t) => t.id))
 
+  const tomorrowISO = (() => {
+    const d = new Date()
+    d.setDate(d.getDate() + 1)
+    return d.toISOString().slice(0, 10)
+  })()
+  const tomorrowTasks = tasks.filter((t) => t.due_date === tomorrowISO)
+
   const buriedTasks = tasks
     .filter((t) => !todayIds.has(t.id) && !isOverdue(t.due_date) && daysSinceCreated(t.created_at) >= BURIED_THRESHOLD_DAYS)
     .sort((a, b) => (a.created_at ?? "").localeCompare(b.created_at ?? ""))
@@ -189,13 +198,34 @@ export function TaskList({ refresh, onEdit, onComplete }: Props) {
     ...(buriedTasks.length > 0 ? [{ title: "積みタスク", tasks: buriedTasks }] : []),
   ]
 
-  const mainTasks = tasks
+  if (dueFilter) {
+    const filteredTasks = dueFilter === "today" ? todayTasks : tomorrowTasks
+    const filterLabel = dueFilter === "today" ? "今日期限" : "明日期限"
+    return (
+      <>
+        {completeError && <p className="status-message error">{completeError}</p>}
+        <div className="due-filter-bar">
+          <span className="due-filter-label">{filterLabel}のタスク（{filteredTasks.length}件）</span>
+          <button className="due-filter-clear" onClick={onClearDueFilter}>× すべて表示</button>
+        </div>
+        {filteredTasks.length === 0 ? (
+          <p className="status-message">該当するタスクがありません</p>
+        ) : (
+          <ul className="task-list">
+            {filteredTasks.map((task) => (
+              <TaskCard key={task.id} task={task} onEdit={onEdit} onComplete={handleComplete} />
+            ))}
+          </ul>
+        )}
+      </>
+    )
+  }
 
   return (
     <>
       {completeError && <p className="status-message error">{completeError}</p>}
       <ul className="task-list">
-        {mainTasks.map((task) => (
+        {tasks.map((task) => (
           <TaskCard key={task.id} task={task} onEdit={onEdit} onComplete={handleComplete} />
         ))}
       </ul>

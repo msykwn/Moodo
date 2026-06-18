@@ -448,6 +448,62 @@ main {
   color: #d97706;
 }
 
+.due-stat--btn {
+  background: none;
+  border: 1.5px solid transparent;
+  border-radius: 6px;
+  padding: 2px 7px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.due-stat--btn:hover {
+  border-color: #fbbf24;
+  background: #fffbeb;
+}
+
+.due-stat--active {
+  border-color: #f59e0b !important;
+  background: #fef3c7 !important;
+}
+
+/* 期限フィルターバー */
+.due-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 8px 14px;
+  background: #fef3c7;
+  border: 1.5px solid #fbbf24;
+  border-radius: 8px;
+}
+
+.due-filter-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #b45309;
+}
+
+.due-filter-clear {
+  background: none;
+  border: 1.5px solid #fbbf24;
+  border-radius: 6px;
+  padding: 2px 10px;
+  font-size: 0.78rem;
+  font-family: inherit;
+  color: #b45309;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.due-filter-clear:hover {
+  background: #fde68a;
+  border-color: #f59e0b;
+}
+
 /* モーダル */
 .modal-backdrop {
   position: fixed;

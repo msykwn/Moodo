@@ -4,7 +4,7 @@ import { MoodPanel } from "./MoodPanel"
 import { TaskList } from "./TaskList"
 import { TaskModal } from "./TaskModal"
 import { runScoring } from "./api"
-import type { EditingTask, Task, TaskCreate } from "./types"
+import type { DueFilter, EditingTask, Task, TaskCreate } from "./types"
 import "./app.css"
 
 export const NEW_TASK: EditingTask = { __new: true }
@@ -17,6 +17,7 @@ function App() {
   const [scoring, setScoring] = useState(false)
   const [scoreToast, setScoreToast] = useState<{ message: string; error: boolean } | null>(null)
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [dueFilter, setDueFilter] = useState<DueFilter>(null)
 
   useEffect(() => {
     return () => {
@@ -92,7 +93,12 @@ function App() {
       <header className="app-header">
         <h1>Moodo</h1>
         <div className="app-header-right">
-          <CompletionStatsPanel refresh={refresh} />
+          <CompletionStatsPanel
+            refresh={refresh}
+            dueFilter={dueFilter}
+            onDueTodayClick={() => setDueFilter((f) => f === "today" ? null : "today")}
+            onDueTomorrowClick={() => setDueFilter((f) => f === "tomorrow" ? null : "tomorrow")}
+          />
           <MoodPanel />
           <button className="btn-score" onClick={handleRunScoring} disabled={scoring}>
             ✦ AIで計画
@@ -103,7 +109,13 @@ function App() {
         </div>
       </header>
       <main>
-        <TaskList refresh={refresh} onEdit={handleEdit} onComplete={() => setRefresh((n) => n + 1)} />
+        <TaskList
+          refresh={refresh}
+          onEdit={handleEdit}
+          onComplete={() => setRefresh((n) => n + 1)}
+          dueFilter={dueFilter}
+          onClearDueFilter={() => setDueFilter(null)}
+        />
       </main>
       <TaskModal
         key={editingTask === null ? 'closed' : ('__new' in editingTask ? `new-${splitKey.current}` : editingTask.id)}

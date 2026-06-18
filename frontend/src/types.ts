@@ -36,6 +36,8 @@ export interface TaskCreate {
 
 export type EditingTask = Task | { readonly __new: true }
 
+export type DueFilter = "today" | "tomorrow" | null
+
 export interface Mood {
   mood: string
 }

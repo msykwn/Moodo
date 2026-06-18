@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from "react"
 import { fetchCompletionStats, fetchDueStats } from "./api"
-import type { CompletionStats, DueStats } from "./types"
+import type { CompletionStats, DueFilter, DueStats } from "./types"
 
 interface Props {
   refresh: number
+  dueFilter: DueFilter
+  onDueTodayClick: () => void
+  onDueTomorrowClick: () => void
 }
 
-export function CompletionStatsPanel({ refresh }: Props) {
+export function CompletionStatsPanel({ refresh, dueFilter, onDueTodayClick, onDueTomorrowClick }: Props) {
   const [completionStats, setCompletionStats] = useState<CompletionStats | null>(null)
   const [dueStats, setDueStats] = useState<DueStats | null>(null)
   const abortRef = useRef<AbortController | null>(null)
@@ -40,8 +43,18 @@ export function CompletionStatsPanel({ refresh }: Props) {
     <div className="completion-stats">
       {dueStats && (
         <>
-          <span className="completion-stat due-stat">今日期限 <strong>{dueStats.due_today}</strong></span>
-          <span className="completion-stat due-stat">明日期限 <strong>{dueStats.due_tomorrow}</strong></span>
+          <button
+            className={`completion-stat due-stat due-stat--btn${dueFilter === "today" ? " due-stat--active" : ""}`}
+            onClick={onDueTodayClick}
+          >
+            今日期限 <strong>{dueStats.due_today}</strong>
+          </button>
+          <button
+            className={`completion-stat due-stat due-stat--btn${dueFilter === "tomorrow" ? " due-stat--active" : ""}`}
+            onClick={onDueTomorrowClick}
+          >
+            明日期限 <strong>{dueStats.due_tomorrow}</strong>
+          </button>
         </>
       )}
       {completionStats && (
