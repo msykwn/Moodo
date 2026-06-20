@@ -109,6 +109,15 @@ export async function fetchVelocity(weeks = 12, signal?: AbortSignal): Promise<W
   return res.json()
 }
 
+export async function postFeedback(taskId: string, comment: string): Promise<void> {
+  const res = await fetch(`${BASE_URL}/tasks/${taskId}/feedback`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ comment }),
+  })
+  if (!res.ok) throw new Error(`Failed to post feedback: ${res.status}`)
+}
+
 export async function runScoring(): Promise<void> {
   const res = await fetch(`${BASE_URL}/tasks/score/run`, { method: "POST" })
   if (!res.ok) {
