@@ -28,6 +28,7 @@ app.add_middleware(
 TASKS_FILE = Path(__file__).parent / "tasks.json"
 COMPLETED_TASKS_FILE = Path(__file__).parent / "completed_tasks.json"
 MOOD_FILE = Path(__file__).parent / "mood.json"
+FEEDBACK_FILE = Path(__file__).parent / "feedback.json"
 PROJECT_ROOT = Path(__file__).parent.parent
 SCORE_PROMPT_FILE = PROJECT_ROOT / "score-prompt.md"
 
@@ -461,6 +462,52 @@ def run_scoring():
         return {"ok": True}
     finally:
         _scoring_lock.release()
+
+
+class FeedbackCreate(BaseModel):
+    comment: str = Field(min_length=1)
+
+
+class Feedback(BaseModel):
+    task_id: str
+    title: str
+    estimate_size: str
+    bother_level: str
+    due_date: str
+    importance: str
+    description: str
+    comment: str
+    created_at: str
+
+
+@app.post("/tasks/{task_id}/feedback", response_model=Feedback, status_code=201)
+def create_feedback(task_id: str, body: FeedbackCreate):
+    with _file_lock:
+        tasks = _read_json(TASKS_FILE, [])
+        task = next((t for t in tasks if t["id"] == task_id), None)
+        if task is None:
+            raise HTTPException(status_code=404, detail="Task not found")
+        feedbacks = _read_json(FEEDBACK_FILE, [])
+        entry = {
+            "task_id": task_id,
+            "title": task["title"],
+            "estimate_size": task.get("estimate_size", ""),
+            "bother_level": task.get("bother_level", ""),
+            "due_date": task.get("due_date", ""),
+            "importance": task.get("importance", ""),
+            "description": task.get("description", ""),
+            "comment": body.comment,
+            "created_at": date.today().isoformat(),
+        }
+        feedbacks.append(entry)
+        _write_json(FEEDBACK_FILE, feedbacks)
+    return entry
+
+
+@app.get("/tasks/{task_id}/feedback", response_model=list[Feedback])
+def get_feedback(task_id: str):
+    feedbacks = _read_json(FEEDBACK_FILE, [])
+    return [f for f in feedbacks if f["task_id"] == task_id]
 
 
 @app.get("/mood")

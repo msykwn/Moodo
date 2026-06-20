@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import type { BotherLevel, EditingTask, EstimateSize, Importance, Task, TaskCreate } from "./types"
 import { createTask, updateTask, toggleTodayFlag, postponeTask } from "./api"
 import { todayLocalISO } from "./utils"
+import { FeedbackModal } from "./FeedbackModal"
 
 interface Props {
   editingTask: EditingTask | null
@@ -139,6 +140,7 @@ export function TaskModal({ editingTask, initialValues, onClose, onSaved, onSpli
   const [todayFlagUpdating, setTodayFlagUpdating] = useState(false)
   const [postponing, setPostponing] = useState(false)
   const [closing, setClosing] = useState(false)
+  const [showFeedback, setShowFeedback] = useState(false)
   const dateInputRef = useRef<HTMLInputElement>(null)
 
   const closeWithFade = () => {
@@ -239,6 +241,10 @@ export function TaskModal({ editingTask, initialValues, onClose, onSaved, onSpli
     dateInputRef.current?.showPicker?.()
   }
 
+  if (showFeedback && editingTask && !("__new" in editingTask)) {
+    return <FeedbackModal task={editingTask as Task} onClose={() => setShowFeedback(false)} />
+  }
+
   return (
     <div className={`modal-backdrop${closing ? " modal-backdrop--closing" : ""}`} onClick={submitting ? undefined : closeWithFade}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -246,6 +252,14 @@ export function TaskModal({ editingTask, initialValues, onClose, onSaved, onSpli
           <h2 className="modal-title">{isNew ? "タスクを追加" : "タスクを編集"}</h2>
           {!isNew && editingTask && !("__new" in editingTask) && (
             <div className="modal-header-actions">
+              <button
+                type="button"
+                className="btn-postpone-modal"
+                disabled={submitting || postponing || todayFlagUpdating}
+                onClick={() => setShowFeedback(true)}
+              >
+                💬
+              </button>
               <button
                 type="button"
                 className="btn-postpone-modal"
