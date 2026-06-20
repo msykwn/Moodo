@@ -1,4 +1,5 @@
 backend/tasks.json
 backend/mood.json
 backend/completed_tasks.json
+backend/feedback.json
 backend/__pycache__/
